@@ -8,8 +8,8 @@
 
 #define WINDOW_WIDTH 1920
 #define WINDOW_HEIGHT 1080
-#define GAME_WIDTH 640
-#define GAME_HEIGHT 360  // 16:9 aspect ratio
+#define GAME_WIDTH 1280
+#define GAME_HEIGHT 720  // 16:9 aspect ratio
 
 #define MAX_PLANES 1024
 #define MAP_Z_SCALE 256.0f
@@ -22,10 +22,11 @@
 
 // procedural constants
 // MUST BE POWER OF TWO (1024, 2048, 4096, 8192)
-#define MAP_SIZE 8192
-#define NOISE_SCALE 12.0f
+#define MAP_SIZE 2048
+#define NOISE_SCALE 5.0f
 
 // Global variables
+Color *frameBuffer;
 Image heightmap;
 Image colormap;
 Color *heightmapData;
@@ -69,10 +70,16 @@ void GenerateTerrainPixel(Color *colPixel, Color *hPixel);
 int main(void)
 {
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vertex Space - Huge Terrain");
+
+  frameBuffer = (Color*)malloc(GAME_WIDTH * GAME_HEIGHT * sizeof(Color));
+
+  Image blank = GenImageColor(GAME_WIDTH, GAME_HEIGHT, BLACK);
+  Texture2D screenTexture = LoadTextureFromImage(blank);
+  UnloadImage(blank);
+
   ToggleFullscreen();
 
-  RenderTexture2D target = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
-  SetTextureFilter(target.texture, TEXTURE_FILTER_POINT);
+  SetTextureFilter(screenTexture, TEXTURE_FILTER_POINT);
 
   GenerateProceduralTerrain();
 
@@ -140,17 +147,17 @@ int main(void)
     while (phi > 2.0f * PI) phi -= 2.0f * PI;
     while (phi < 0.0f) phi += 2.0f * PI;
 
-    BeginTextureMode(target);
-      ClearBackground(sky_color);
-      DrawVertexSpace();
-    EndTextureMode();
+    for (int i = 0; i < GAME_WIDTH * GAME_HEIGHT; i++) {
+      frameBuffer[i] = sky_color;
+    }
+    DrawVertexSpace();
+    UpdateTexture(screenTexture, frameBuffer);
 
     BeginDrawing();
       ClearBackground(BLACK);
-      Rectangle srcRect = { 0.0f, 0.0f, (float)target.texture.width, (float)-target.texture.height };
+      Rectangle srcRect = { 0.0f, 0.0f, (float)GAME_WIDTH, (float)GAME_HEIGHT };
       Rectangle destRect = { 0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight() };
-      DrawTexturePro(target.texture, srcRect, destRect, (Vector2){ 0, 0 }, 0.0f, WHITE);
-
+      DrawTexturePro(screenTexture, srcRect, destRect, (Vector2){ 0, 0 }, 0.0f, WHITE);
       DrawText(TextFormat("FPS: %d", GetFPS()), 10, 10, 20, BLACK);
       DrawText(TextFormat("Pos: %.0f, %.0f", camera_x, camera_y), 10, 35, 20, BLACK);
       if (!cursorLocked) DrawText("MOUSE UNLOCKED (PRESS TAB)", 10, 60, 20, RED);
@@ -158,7 +165,6 @@ int main(void)
     EndDrawing();
   }
 
-  UnloadRenderTexture(target);
   UnloadImage(heightmap);
   UnloadImage(colormap);
   CloseWindow();
@@ -298,17 +304,19 @@ void DrawVertexSpace(void)
       int height = heightmapData[index].r;
       int screen_y = (int)((camera_z - height) / (float)p * MAP_Z_SCALE + horizon);
 
-      if (screen_y < lowest_horizon)
-      {
+      if (screen_y < lowest_horizon){
         if (screen_y < 0) screen_y = 0;
         int draw_height = lowest_horizon - screen_y;
 
-        if (draw_height > 0)
-        {
+        if (draw_height > 0){
           Color col = colormapData[index];
           col = ApplyFog(col, fog_factor);
 
-          DrawRectangle(screen_x, screen_y, fill_width, draw_height, col);
+          for (int k = 0; k < fill_width; k++) {
+            for (int y = screen_y; y < lowest_horizon; y++) {
+              frameBuffer[y * GAME_WIDTH + (screen_x + k)] = col;
+            }
+          }
 
           for (int k = 0; k < fill_width; k++) {
             y_buffer[screen_x + k] = screen_y;
