@@ -33,7 +33,7 @@ void AddEntity(EntityManager *manager, EntityType type, float x, float y) {
         e->width = 8;
         e->length = 20;
         e->height_shape = 8; 
-        e->z_offset = 60;    // Water level
+        e->z_offset = LEVEL_WATER;    // Water level
         e->color = (Color){100, 100, 110, 255}; // Ironclad gray
         
         e->speed = (float)GetRandomValue(10, 30); // Random speed
@@ -88,9 +88,9 @@ void UpdateEntities(EntityManager *manager, float deltaTime, const Terrain *terr
              int mapY = (int)nextY & (MAP_SIZE - 1);
              int index = mapY * MAP_SIZE + mapX;
              
-             // Water level is 60. If terrain is higher, it's land.
-             // We allow a small tolerance (e.g. 62) for shorelines
-             if (terrain->heightmapRaw[index] > 62) {
+             // Water level is LEVEL_WATER. If terrain is higher, it's land.
+             // We allow a small tolerance for shorelines
+             if (terrain->heightmapRaw[index] > LEVEL_WATER + 2) {
                  // Bounce: simplistic reflection
                  e->dx = -e->dx;
                  e->dy = -e->dy;
@@ -119,8 +119,8 @@ void UpdateEntities(EntityManager *manager, float deltaTime, const Terrain *terr
              int mapY = (int)nextY & (MAP_SIZE - 1);
              int index = mapY * MAP_SIZE + mapX;
              
-             // Land units stay on land (height > 62). Bounce on water.
-             if (terrain->heightmapRaw[index] <= 62) {
+             // Land units stay on land. Bounce on water.
+             if (terrain->heightmapRaw[index] <= LEVEL_WATER + 2) {
                  e->dx = -e->dx;
                  e->dy = -e->dy;
                  

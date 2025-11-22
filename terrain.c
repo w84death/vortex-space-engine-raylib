@@ -15,27 +15,27 @@ static void GenerateTerrainPixel(Color *colPixel, unsigned char *hPixel)
 {
   unsigned char h = *hPixel;
 
-  if (h < 60) {
-    *hPixel = 60;
-    if (h < 40) *colPixel = waterDeep;
+  if (h < LEVEL_WATER) {
+    *hPixel = LEVEL_WATER;
+    if (h < LEVEL_WATER - 20) *colPixel = waterDeep;
     else *colPixel = waterShallow;
     return;
   }
-  else if (h < 95 + GetRandomValue(-5, 15)) {
+  else if (h < LEVEL_SAND + GetRandomValue(-5, 15)) {
     *colPixel = sand;
     colPixel->r += GetRandomValue(-10, 10);
     colPixel->g += GetRandomValue(-10, 10);
   }
-  else if (h < 120 + GetRandomValue(-10, 25)) {
+  else if (h < LEVEL_GRASS_LOW + GetRandomValue(-10, 25)) {
     *colPixel = grassLow;
     colPixel->g += GetRandomValue(-15, 15);
   }
-  else if (h < 140 + GetRandomValue(-20, 50)) {
+  else if (h < LEVEL_GRASS_HIGH + GetRandomValue(-20, 50)) {
     *colPixel = grassHigh;
     colPixel->g += GetRandomValue(-25, 10);
     *hPixel += GetRandomValue(0, 10);
   }
-  else if (h < 215 + GetRandomValue(-10, 10)) {
+  else if (h < LEVEL_ROCK + GetRandomValue(-10, 10)) {
     *colPixel = rock;
     int r = GetRandomValue(-10, 10);
     colPixel->r += r;

@@ -7,6 +7,31 @@
 #include "entities.h"
 #include <stdlib.h>
 
+void SpawnEntitySmart(EntityManager *manager, const Terrain *terrain, EntityType type, int count) {
+    int spawned = 0;
+    int attempts = 0;
+    while(spawned < count && attempts < count * 1000) {
+        attempts++;
+        int x = GetRandomValue(0, MAP_SIZE - 1);
+        int y = GetRandomValue(0, MAP_SIZE - 1);
+        int index = y * MAP_SIZE + x;
+        unsigned char h = terrain->heightmapRaw[index];
+
+        bool valid = false;
+        if (type == ENTITY_SHIP) {
+            if (h <= LEVEL_WATER) valid = true;
+        } else if (type == ENTITY_UNIT || type == ENTITY_BUILDING) {
+            // Spawn on Sand layer
+            if (h > LEVEL_WATER + 2 && h < LEVEL_SAND) valid = true;
+        }
+
+        if (valid) {
+            AddEntity(manager, type, (float)x, (float)y);
+            spawned++;
+        }
+    }
+}
+
 int main(void)
 {
     EngineState engineState;
@@ -21,17 +46,10 @@ int main(void)
     GenerateProceduralTerrain(&terrain);
 
     InitEntityManager(entityManager);
-    for (int i = 0; i < 50; i++) {
-        AddEntity(entityManager, ENTITY_SHIP, (float)GetRandomValue(0, MAP_SIZE), (float)GetRandomValue(0, MAP_SIZE));
-    }
 
-    for (int i = 0; i < 200; i++) {
-        AddEntity(entityManager, ENTITY_UNIT, (float)GetRandomValue(0, MAP_SIZE), (float)GetRandomValue(0, MAP_SIZE));
-    }
-
-    for (int i = 0; i < 100; i++) {
-        AddEntity(entityManager, ENTITY_BUILDING, (float)GetRandomValue(0, MAP_SIZE), (float)GetRandomValue(0, MAP_SIZE));
-    }
+    SpawnEntitySmart(entityManager, &terrain, ENTITY_SHIP, 50);
+    SpawnEntitySmart(entityManager, &terrain, ENTITY_UNIT, 200);
+    SpawnEntitySmart(entityManager, &terrain, ENTITY_BUILDING, 100);
 
 
     // Main game loop
