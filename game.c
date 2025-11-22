@@ -6,6 +6,7 @@
 #include "ui.h"
 #include "entities.h"
 #include "settings.h"
+#include "editor.h"
 #include <stdlib.h>
 
 GameSettings gameSettings;
@@ -44,24 +45,28 @@ void RunSetup() {
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_UP)) selection--;
         if (IsKeyPressed(KEY_DOWN)) selection++;
-        if (selection < 0) selection = 3;
-        if (selection > 3) selection = 0;
+        if (selection < 0) selection = 4;
+        if (selection > 4) selection = 0;
 
         if (IsKeyPressed(KEY_ENTER)) break;
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
-        DrawText("Select Map Size:", 20, 20, 20, BLACK);
+        DrawText("Select Mode / Map Size:", 20, 20, 20, BLACK);
 
         Color c0 = (selection == 0) ? RED : DARKGRAY;
         Color c1 = (selection == 1) ? RED : DARKGRAY;
         Color c2 = (selection == 2) ? RED : DARKGRAY;
         Color c3 = (selection == 3) ? RED : DARKGRAY;
+        Color c4 = (selection == 4) ? BLUE : DARKGRAY;
 
         DrawText("1024x1024 (Tiny)", 40, 60, 20, c0);
         DrawText("2048x2048 (Small)", 40, 90, 20, c1);
         DrawText("4096x4096 (Medium)", 40, 120, 20, c2);
         DrawText("8192x8192 (Large)", 40, 150, 20, c3);
+        
+        DrawText("----------------", 40, 175, 20, BLACK);
+        DrawText("Model Editor", 40, 200, 20, c4);
         
         DrawText("Press ENTER to Start", 20, 300, 20, DARKBLUE);
         DrawText("Use Arrow Keys and Enter", 20, 330, 16, DARKGRAY);
@@ -70,6 +75,8 @@ void RunSetup() {
     }
 
     // Set settings based on selection
+    gameSettings.gameMode = MODE_GAME;
+
     switch(selection) {
         case 0: // 1024
             gameSettings.mapSize = 1024;
@@ -99,6 +106,10 @@ void RunSetup() {
             gameSettings.unitCount = 200;
             gameSettings.buildingCount = 100;
             break;
+        case 4: // Editor
+            gameSettings.gameMode = MODE_EDITOR;
+            gameSettings.mapSize = 1024;
+            break;
     }
 
     CloseWindow();
@@ -107,6 +118,11 @@ void RunSetup() {
 int main(void)
 {
     RunSetup();
+
+    if (gameSettings.gameMode == MODE_EDITOR) {
+        RunEditor();
+        return 0;
+    }
 
     EngineState engineState;
     Terrain terrain;

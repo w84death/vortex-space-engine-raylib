@@ -5,13 +5,20 @@
 #include "terrain.h"
 
 #define MAX_ENTITIES 4096
-#define MAX_ENTITY_SIZE 64 // Maximum width/height in map pixels
+#define MAX_ENTITY_SIZE 32 // Maximum width/height in map pixels
 
 typedef enum {
     ENTITY_SHIP,
     ENTITY_UNIT,
     ENTITY_BUILDING
 } EntityType;
+
+typedef struct {
+    int width;
+    int length;
+    unsigned char heights[MAX_ENTITY_SIZE * MAX_ENTITY_SIZE];
+    Color colors[MAX_ENTITY_SIZE * MAX_ENTITY_SIZE];
+} VoxelModel;
 
 typedef struct {
     bool active;

@@ -1,7 +1,13 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+typedef enum {
+    MODE_GAME,
+    MODE_EDITOR
+} GameMode;
+
 typedef struct {
+    GameMode gameMode;
     int mapSize;
     float noiseScale;
     int shipCount;
