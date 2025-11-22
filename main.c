@@ -40,21 +40,18 @@ float depth_scale_table[MAX_PLANES];
 #define FIXED_POINT_SCALE (1 << FIXED_POINT_SHIFT)
 
 // Fog parameters
-float fog_start = (float)MAX_PLANES/3;
-float fog_end = (float)MAX_PLANES;
-float fog_density = 3.5f;
 Color sky_color = {135, 206, 235, 255};
 
 // Camera parameters
 float camera_x = MAP_SIZE / 2.0f;
 float camera_y = MAP_SIZE / 2.0f;
-float camera_z = 256.0f;
-float horizon = 100.0f;
-float phi = 0.0f;
+float camera_z = 600.0f;
+float horizon = -150.0f;
+float phi = 0.785398f;
 float sinphi, cosphi;
 
 // Input State
-bool cursorLocked = true;
+bool cursorLocked = false;
 
 // Terrain Colors
 Color waterDeep = {0, 50, 120, 255};
@@ -67,7 +64,6 @@ Color snow = {255, 255, 255, 255};
 
 // Function prototypes
 void DrawVertexSpace(void);
-Color ApplyFog(Color color, float fog_factor);
 void GenerateProceduralTerrain(void);
 void DrawMessage(const char* text);
 void GenerateTerrainPixel(Color *colPixel, unsigned char *hPixel);
@@ -89,7 +85,6 @@ int main(void)
 
   GenerateProceduralTerrain();
 
-  DisableCursor();
   SetTargetFPS(60);
 
   // Main game loop
@@ -107,18 +102,32 @@ int main(void)
       camera_y = MAP_SIZE / 2.0f;
     }
 
-    if (IsKeyPressed(KEY_TAB)) {
-      cursorLocked = !cursorLocked;
-      if (cursorLocked) DisableCursor();
-      else EnableCursor();
+    // Edge Scrolling
+    Vector2 mousePos = GetMousePosition();
+    int edgeSize = 40;
+
+    if (mousePos.x < edgeSize) { // Left
+      camera_x -= cosphi * MOVE_SPEED * deltaTime;
+      camera_y += sinphi * MOVE_SPEED * deltaTime;
+    }
+    if (mousePos.x > GetScreenWidth() - edgeSize) { // Right
+      camera_x += cosphi * MOVE_SPEED * deltaTime;
+      camera_y -= sinphi * MOVE_SPEED * deltaTime;
+    }
+    if (mousePos.y < edgeSize) { // Top
+      camera_x -= sinphi * MOVE_SPEED * deltaTime;
+      camera_y -= cosphi * MOVE_SPEED * deltaTime;
+    }
+    if (mousePos.y > GetScreenHeight() - edgeSize) { // Bottom
+      camera_x += sinphi * MOVE_SPEED * deltaTime;
+      camera_y += cosphi * MOVE_SPEED * deltaTime;
     }
 
-    if (cursorLocked) {
-      Vector2 mouseDelta = GetMouseDelta();
-      phi -= mouseDelta.x * MOUSE_SENSITIVITY_X;
-      horizon -= mouseDelta.y * MOUSE_SENSITIVITY_Y;
-      if (horizon < -150.0f) horizon = -150.0f;
-      if (horizon > GAME_HEIGHT + 150.0f) horizon = GAME_HEIGHT + 150.0f;
+    // Mouse Zoom
+    float wheel = GetMouseWheelMove();
+    if (wheel != 0) {
+        camera_z -= wheel * 30.0f;
+        if (camera_z < 50.0f) camera_z = 50.0f;
     }
 
     if (IsKeyDown(KEY_W)) {
@@ -137,12 +146,11 @@ int main(void)
       camera_x += cosphi * MOVE_SPEED * deltaTime;
       camera_y -= sinphi * MOVE_SPEED * deltaTime;
     }
-    if (IsKeyDown(KEY_Q) || IsKeyDown(KEY_LEFT_SHIFT)) {
-      camera_z -= MOVE_SPEED * deltaTime;
-      if (camera_z < 10.0f) camera_z = 10.0f;
+    if (IsKeyDown(KEY_Q)) {
+      phi -= 1.5f * deltaTime;
     }
-    if (IsKeyDown(KEY_E) || IsKeyDown(KEY_SPACE)) {
-      camera_z += MOVE_SPEED * deltaTime;
+    if (IsKeyDown(KEY_E)) {
+      phi += 1.5f * deltaTime;
     }
 
     if (camera_x < 0) camera_x = 0;
@@ -166,7 +174,7 @@ int main(void)
       DrawTexturePro(screenTexture, srcRect, destRect, (Vector2){ 0, 0 }, 0.0f, WHITE);
       DrawText(TextFormat("FPS: %d", GetFPS()), 10, 10, 20, BLACK);
       DrawText(TextFormat("Pos: %.0f, %.0f", camera_x, camera_y), 10, 35, 20, BLACK);
-      if (!cursorLocked) DrawText("MOUSE UNLOCKED (PRESS TAB)", 10, 60, 20, RED);
+      DrawText("Strategy View: WASD/Mouse edges to move, Q/E to rotate, Scroll to zoom", 10, 60, 20, DARKBLUE);
 
     EndDrawing();
   }
@@ -276,12 +284,6 @@ void DrawVertexSpace(void)
   for (int p = 1; p < MAX_PLANES; p++)
   {
     int step = 1 + (p / LOD_FACTOR);
-    float fog_factor = 0.0f;
-    if (p > fog_start) {
-        float normalized_distance = ((float)p - fog_start) / (fog_end - fog_start);
-        if (normalized_distance > 1.0f) normalized_distance = 1.0f;
-        fog_factor = 1.0f - expf(-normalized_distance * fog_density);
-    }
 
     pleft_x = (-cosphi * p - sinphi * p) + camera_x;
     pleft_y = (sinphi * p - cosphi * p) + camera_y;
@@ -336,10 +338,6 @@ void DrawVertexSpace(void)
         if (draw_height > 0){
           Color col = colormapData[index];
 
-          if (fog_factor > 0.0f) {
-            col = ApplyFog(col, fog_factor);
-          }
-
           int base_offset = screen_y * GAME_WIDTH + screen_x;
           for (int k = 0; k < fill_width; k++) {
             int offset = base_offset + k;
@@ -361,19 +359,4 @@ void DrawVertexSpace(void)
   }
 }
 
-Color ApplyFog(Color terrainColor, float fogFactor)
-{
-  if (fogFactor <= 0.0f) return terrainColor;
-  if (fogFactor >= 1.0f) return sky_color;
 
-  int alpha = (int)(fogFactor * 256);
-  int inv_alpha = 256 - alpha;
-
-  Color result;
-  result.r = (unsigned char)((terrainColor.r * inv_alpha + sky_color.r * alpha) >> 8);
-  result.g = (unsigned char)((terrainColor.g * inv_alpha + sky_color.g * alpha) >> 8);
-  result.b = (unsigned char)((terrainColor.b * inv_alpha + sky_color.b * alpha) >> 8);
-  result.a = 255;
-
-  return result;
-}
