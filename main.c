@@ -23,7 +23,7 @@
 // procedural constants
 // MUST BE POWER OF TWO (1024, 2048, 4096, 8192)
 #define MAP_SIZE 8192
-#define NOISE_SCALE 25.0f
+#define NOISE_SCALE 12.0f
 
 // Global variables
 Image heightmap;
@@ -127,9 +127,7 @@ int main(void)
             if (horizon > GAME_HEIGHT + 150.0f) horizon = GAME_HEIGHT + 150.0f;
         }
 
-        // Keyboard Rotation (Optional backup)
-        if (IsKeyDown(KEY_A)) phi += 1.5f * deltaTime;
-        if (IsKeyDown(KEY_D)) phi -= 1.5f * deltaTime;
+
 
         // Movement
         if (IsKeyDown(KEY_W)) {
@@ -139,6 +137,18 @@ int main(void)
         if (IsKeyDown(KEY_S)) {
             camera_x += sinphi * MOVE_SPEED * deltaTime;
             camera_y += cosphi * MOVE_SPEED * deltaTime;
+        }
+
+        // Strafe Left (A) - Move Perpendicular to view
+        if (IsKeyDown(KEY_A)) {
+            camera_x -= cosphi * MOVE_SPEED * deltaTime;
+            camera_y += sinphi * MOVE_SPEED * deltaTime;
+        }
+
+        // Strafe Right (D) - Move Perpendicular to view
+        if (IsKeyDown(KEY_D)) {
+            camera_x += cosphi * MOVE_SPEED * deltaTime;
+            camera_y -= sinphi * MOVE_SPEED * deltaTime;
         }
 
         // Altitude
@@ -207,6 +217,14 @@ void GenerateProceduralTerrain(void)
 
     ImageFormat(&heightmap, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
     heightmapData = (Color*)heightmap.data;
+
+    for (int i = 0; i < MAP_SIZE * MAP_SIZE; i++) {
+        float h_normalized = heightmapData[i].r / 255.0f;
+        // Apply cubic curve (y = x^3) to flatten low values and spike high values
+        float h_curved = powf(h_normalized, 3.0f);
+        heightmapData[i].r = (unsigned char)(h_curved * 255.0f);
+    }
+
 
     // 2. Generate Colormap
     colormap = GenImageColor(MAP_SIZE, MAP_SIZE, BLACK);
