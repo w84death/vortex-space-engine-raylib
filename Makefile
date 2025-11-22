@@ -6,7 +6,7 @@ MINGW_CC = x86_64-w64-mingw32-gcc
 UPX = upx
 
 # Source and Target
-SOURCE = main.c
+SOURCE = game.c engine.c terrain.c renderer.c ui.c input.c
 TARGET = game_engine_demo
 
 # Default target: run the program (dev mode using system libraries)
