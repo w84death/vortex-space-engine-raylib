@@ -13,7 +13,7 @@
 
 #define MAX_PLANES 1024
 #define MAP_Z_SCALE 256.0f
-#define MOVE_SPEED 140.0f
+#define MOVE_SPEED 180.0f
 #define LOD_FACTOR 512
 
 // Mouselook Settings
@@ -23,7 +23,7 @@
 // procedural constants
 // MUST BE POWER OF TWO (1024, 2048, 4096, 8192)
 #define MAP_SIZE 8192
-#define NOISE_SCALE 14.0f
+#define NOISE_SCALE 18.0f
 
 // Global variables
 Color *frameBuffer;
@@ -33,6 +33,11 @@ Image colormap;
 Color *heightmapData;
 Color *colormapData;
 int y_buffer[GAME_WIDTH];
+float depth_scale_table[MAX_PLANES];
+
+// Fixed-point math constants
+#define FIXED_POINT_SHIFT 16
+#define FIXED_POINT_SCALE (1 << FIXED_POINT_SHIFT)
 
 // Fog parameters
 float fog_start = (float)MAX_PLANES/3;
@@ -95,7 +100,7 @@ int main(void)
     cosphi = cosf(phi);
 
     if (IsKeyPressed(KEY_R)) {
-      UnloadImage(heightmap);
+      free(heightmapRaw);
       UnloadImage(colormap);
       GenerateProceduralTerrain();
       camera_x = MAP_SIZE / 2.0f;
@@ -166,7 +171,8 @@ int main(void)
     EndDrawing();
   }
 
-  UnloadImage(heightmap);
+  free(heightmapRaw);
+  free(frameBuffer);
   UnloadImage(colormap);
   CloseWindow();
 
@@ -197,8 +203,11 @@ void GenerateProceduralTerrain(void)
         heightmapRaw[i] = heightmapData[i].r;
     }
 
+    UnloadImage(heightmap);
+    heightmapData = NULL;
+
     for (int i = 0; i < MAP_SIZE * MAP_SIZE; i++) {
-        float h_normalized = heightmapData[i].r / 255.0f;
+        float h_normalized = heightmapRaw[i] / 255.0f;
         float h_curved = powf(h_normalized, 3.0f);
         heightmapRaw[i] = (unsigned char)(h_curved * 255.0f);
     }
@@ -258,6 +267,10 @@ void DrawVertexSpace(void)
     y_buffer[i] = GAME_HEIGHT;
   }
 
+  for(int i=1; i<MAX_PLANES; i++){
+    depth_scale_table[i] = MAP_Z_SCALE / (float)i;
+  }
+
   float pleft_x, pleft_y, pright_x, pright_y;
 
   for (int p = 1; p < MAX_PLANES; p++)
@@ -275,14 +288,20 @@ void DrawVertexSpace(void)
     pright_x = (cosphi * p - sinphi * p) + camera_x;
     pright_y = (-sinphi * p - cosphi * p) + camera_y;
 
-    float base_dx = (pright_x - pleft_x) / GAME_WIDTH;
-    float base_dy = (pright_y - pleft_y) / GAME_WIDTH;
+    // Convert to fixed-point for faster coordinate calculations
+    int pleft_x_fixed = (int)(pleft_x * FIXED_POINT_SCALE);
+    int pleft_y_fixed = (int)(pleft_y * FIXED_POINT_SCALE);
+    int pright_x_fixed = (int)(pright_x * FIXED_POINT_SCALE);
+    int pright_y_fixed = (int)(pright_y * FIXED_POINT_SCALE);
 
-    float map_dx = base_dx * step;
-    float map_dy = base_dy * step;
+    int base_dx_fixed = (pright_x_fixed - pleft_x_fixed) / GAME_WIDTH;
+    int base_dy_fixed = (pright_y_fixed - pleft_y_fixed) / GAME_WIDTH;
 
-    float cur_map_x = pleft_x;
-    float cur_map_y = pleft_y;
+    int map_dx_fixed = base_dx_fixed * step;
+    int map_dy_fixed = base_dy_fixed * step;
+
+    int cur_map_x_fixed = pleft_x_fixed;
+    int cur_map_y_fixed = pleft_y_fixed;
 
     for (int screen_x = 0; screen_x < GAME_WIDTH; screen_x += step)
     {
@@ -298,17 +317,17 @@ void DrawVertexSpace(void)
       }
 
       if (lowest_horizon <= 0) {
-        cur_map_x += map_dx;
-        cur_map_y += map_dy;
+        cur_map_x_fixed += map_dx_fixed;
+        cur_map_y_fixed += map_dy_fixed;
         continue;
       }
 
-      int map_x_int = (int)cur_map_x & (MAP_SIZE - 1);
-      int map_y_int = (int)cur_map_y & (MAP_SIZE - 1);
+      int map_x_int = (cur_map_x_fixed >> FIXED_POINT_SHIFT) & (MAP_SIZE - 1);
+      int map_y_int = (cur_map_y_fixed >> FIXED_POINT_SHIFT) & (MAP_SIZE - 1);
       int index = map_y_int * MAP_SIZE + map_x_int;
 
       int height = heightmapRaw[index];
-      int screen_y = (int)((camera_z - height) / (float)p * MAP_Z_SCALE + horizon);
+      int screen_y = (int)((camera_z - height) * depth_scale_table[p] + horizon);
 
       if (screen_y < lowest_horizon){
         if (screen_y < 0) screen_y = 0;
@@ -316,11 +335,17 @@ void DrawVertexSpace(void)
 
         if (draw_height > 0){
           Color col = colormapData[index];
-          col = ApplyFog(col, fog_factor);
 
+          if (fog_factor > 0.0f) {
+            col = ApplyFog(col, fog_factor);
+          }
+
+          int base_offset = screen_y * GAME_WIDTH + screen_x;
           for (int k = 0; k < fill_width; k++) {
+            int offset = base_offset + k;
             for (int y = screen_y; y < lowest_horizon; y++) {
-              frameBuffer[y * GAME_WIDTH + (screen_x + k)] = col;
+              frameBuffer[offset] = col;
+              offset += GAME_WIDTH;
             }
           }
 
@@ -330,8 +355,8 @@ void DrawVertexSpace(void)
         }
       }
 
-      cur_map_x += map_dx;
-      cur_map_y += map_dy;
+      cur_map_x_fixed += map_dx_fixed;
+      cur_map_y_fixed += map_dy_fixed;
     }
   }
 }
