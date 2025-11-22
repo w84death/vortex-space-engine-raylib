@@ -41,6 +41,29 @@ void AddEntity(EntityManager *manager, EntityType type, float x, float y) {
         e->dx = cosf(angle) * e->speed;
         e->dy = sinf(angle) * e->speed;
     }
+    else if (type == ENTITY_UNIT) {
+        e->width = 2;
+        e->length = 2;
+        e->height_shape = 4;
+        e->z_offset = 0; // Ignored for land units
+        e->color = BLACK;
+        
+        e->speed = (float)GetRandomValue(20, 40);
+        float angle = (float)GetRandomValue(0, 628) / 100.0f;
+        e->dx = cosf(angle) * e->speed;
+        e->dy = sinf(angle) * e->speed;
+    }
+    else if (type == ENTITY_BUILDING) {
+        e->width = 8;
+        e->length = 8;
+        e->height_shape = 8;
+        e->z_offset = 0; // Ignored for buildings
+        e->color = BROWN;
+        
+        e->speed = 0;
+        e->dx = 0;
+        e->dy = 0;
+    }
     
     manager->count++;
 }
@@ -73,6 +96,34 @@ void UpdateEntities(EntityManager *manager, float deltaTime, const Terrain *terr
                  e->dy = -e->dy;
                  
                  // Add some randomness
+                 float noise = ((float)GetRandomValue(-100, 100) / 100.0f) * 0.5f; 
+                 e->dx += noise;
+                 e->dy += noise;
+             } else {
+                 e->x = nextX;
+                 e->y = nextY;
+             }
+        }
+        else if (e->type == ENTITY_UNIT) {
+             float nextX = e->x + e->dx * deltaTime;
+             float nextY = e->y + e->dy * deltaTime;
+             
+             // Map bounds wrapping
+             if (nextX < 0) nextX += MAP_SIZE;
+             if (nextX >= MAP_SIZE) nextX -= MAP_SIZE;
+             if (nextY < 0) nextY += MAP_SIZE;
+             if (nextY >= MAP_SIZE) nextY -= MAP_SIZE;
+
+             // Check collision with terrain
+             int mapX = (int)nextX & (MAP_SIZE - 1);
+             int mapY = (int)nextY & (MAP_SIZE - 1);
+             int index = mapY * MAP_SIZE + mapX;
+             
+             // Land units stay on land (height > 62). Bounce on water.
+             if (terrain->heightmapRaw[index] <= 62) {
+                 e->dx = -e->dx;
+                 e->dy = -e->dy;
+                 
                  float noise = ((float)GetRandomValue(-100, 100) / 100.0f) * 0.5f; 
                  e->dx += noise;
                  e->dy += noise;
@@ -115,7 +166,9 @@ void PaintEntities(EntityManager *manager, Terrain *terrain) {
                 // 2. Paint Entity
                 // Only paint if the entity is "above" the existing terrain
                 unsigned char currentH = terrain->heightmapRaw[mapIndex];
-                unsigned char entityH = (unsigned char)(e->z_offset + e->height_shape);
+                
+                unsigned char baseH = (e->type == ENTITY_SHIP) ? (unsigned char)e->z_offset : currentH;
+                unsigned char entityH = baseH + (unsigned char)e->height_shape;
 
                 if (entityH >= currentH) {
                     terrain->heightmapRaw[mapIndex] = entityH;
@@ -132,6 +185,19 @@ void PaintEntities(EntityManager *manager, Terrain *terrain) {
                         if (dx >= 2 && dx <= e->width-3 && dy >= 2 && dy <= 6) {
                             terrain->heightmapRaw[mapIndex] += 4; // Taller cabin
                             terrain->colormapData[mapIndex] = RAYWHITE;
+                        }
+                    }
+                    else if (e->type == ENTITY_BUILDING) {
+                        int cx = e->width / 2;
+                        int cy = e->length / 2;
+                        int distX = abs(dx - cx);
+                        int distY = abs(dy - cy);
+                        int dist = (distX > distY) ? distX : distY;
+                        
+                        int roofHeight = (cx - dist) * 2;
+                        if (roofHeight > 0) {
+                            terrain->heightmapRaw[mapIndex] += roofHeight;
+                            terrain->colormapData[mapIndex] = (Color){160, 82, 45, 255}; // Sienna
                         }
                     }
                 }

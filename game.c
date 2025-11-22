@@ -21,15 +21,18 @@ int main(void)
     GenerateProceduralTerrain(&terrain);
 
     InitEntityManager(entityManager);
-    for (int i = 0; i < 1024; i++) {
+    for (int i = 0; i < 50; i++) {
         AddEntity(entityManager, ENTITY_SHIP, (float)GetRandomValue(0, MAP_SIZE), (float)GetRandomValue(0, MAP_SIZE));
     }
-    for (int i = 0; i < 1024; i++) {
+
+    for (int i = 0; i < 200; i++) {
         AddEntity(entityManager, ENTITY_UNIT, (float)GetRandomValue(0, MAP_SIZE), (float)GetRandomValue(0, MAP_SIZE));
     }
-    for (int i = 0; i < 512; i++) {
+
+    for (int i = 0; i < 100; i++) {
         AddEntity(entityManager, ENTITY_BUILDING, (float)GetRandomValue(0, MAP_SIZE), (float)GetRandomValue(0, MAP_SIZE));
     }
+
 
     // Main game loop
     while (!WindowShouldClose())
