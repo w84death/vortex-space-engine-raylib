@@ -1,5 +1,6 @@
-// VERTEX SPACE TERRAIN RENDERER
-// Powered by Raylib
+// CODENAME: VERTEX SPACE TERRAIN RENDERER
+// For RTS games. Powered by Raylib
+// Krzysztof Krystian Jankowski
 
 #include "raylib.h"
 #include <math.h>
@@ -358,5 +359,3 @@ void DrawVertexSpace(void)
     }
   }
 }
-
-
