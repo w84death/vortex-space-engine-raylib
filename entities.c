@@ -1,4 +1,5 @@
 #include "entities.h"
+#include "settings.h"
 #include "constants.h"
 #include <stdlib.h>
 #include <math.h>
@@ -78,15 +79,15 @@ void UpdateEntities(EntityManager *manager, float deltaTime, const Terrain *terr
              float nextY = e->y + e->dy * deltaTime;
              
              // Map bounds wrapping
-             if (nextX < 0) nextX += MAP_SIZE;
-             if (nextX >= MAP_SIZE) nextX -= MAP_SIZE;
-             if (nextY < 0) nextY += MAP_SIZE;
-             if (nextY >= MAP_SIZE) nextY -= MAP_SIZE;
+             if (nextX < 0) nextX += gameSettings.mapSize;
+             if (nextX >= gameSettings.mapSize) nextX -= gameSettings.mapSize;
+             if (nextY < 0) nextY += gameSettings.mapSize;
+             if (nextY >= gameSettings.mapSize) nextY -= gameSettings.mapSize;
 
              // Check collision with terrain
-             int mapX = (int)nextX & (MAP_SIZE - 1);
-             int mapY = (int)nextY & (MAP_SIZE - 1);
-             int index = mapY * MAP_SIZE + mapX;
+             int mapX = (int)nextX & (gameSettings.mapSize - 1);
+             int mapY = (int)nextY & (gameSettings.mapSize - 1);
+             int index = mapY * gameSettings.mapSize + mapX;
              
              // Water level is LEVEL_WATER. If terrain is higher, it's land.
              // We allow a small tolerance for shorelines
@@ -109,15 +110,15 @@ void UpdateEntities(EntityManager *manager, float deltaTime, const Terrain *terr
              float nextY = e->y + e->dy * deltaTime;
              
              // Map bounds wrapping
-             if (nextX < 0) nextX += MAP_SIZE;
-             if (nextX >= MAP_SIZE) nextX -= MAP_SIZE;
-             if (nextY < 0) nextY += MAP_SIZE;
-             if (nextY >= MAP_SIZE) nextY -= MAP_SIZE;
+             if (nextX < 0) nextX += gameSettings.mapSize;
+             if (nextX >= gameSettings.mapSize) nextX -= gameSettings.mapSize;
+             if (nextY < 0) nextY += gameSettings.mapSize;
+             if (nextY >= gameSettings.mapSize) nextY -= gameSettings.mapSize;
 
              // Check collision with terrain
-             int mapX = (int)nextX & (MAP_SIZE - 1);
-             int mapY = (int)nextY & (MAP_SIZE - 1);
-             int index = mapY * MAP_SIZE + mapX;
+             int mapX = (int)nextX & (gameSettings.mapSize - 1);
+             int mapY = (int)nextY & (gameSettings.mapSize - 1);
+             int index = mapY * gameSettings.mapSize + mapX;
              
              // Land units stay on land. Bounce on water.
              if (terrain->heightmapRaw[index] <= LEVEL_WATER + 2) {
@@ -153,9 +154,9 @@ void PaintEntities(EntityManager *manager, Terrain *terrain) {
         for(int dy = 0; dy < e->length; dy++) {
             for(int dx = 0; dx < e->width; dx++) {
                 // Handle map wrapping
-                int mx = (px + dx) & (MAP_SIZE - 1);
-                int my = (py + dy) & (MAP_SIZE - 1);
-                int mapIndex = my * MAP_SIZE + mx;
+                int mx = (px + dx) & (gameSettings.mapSize - 1);
+                int my = (py + dy) & (gameSettings.mapSize - 1);
+                int mapIndex = my * gameSettings.mapSize + mx;
                 
                 if (bufIndex >= MAX_ENTITY_SIZE * MAX_ENTITY_SIZE) break;
 
@@ -217,9 +218,9 @@ void RestoreEntities(EntityManager *manager, Terrain *terrain) {
         int bufIndex = 0;
         for(int dy = 0; dy < e->paint_h; dy++) {
             for(int dx = 0; dx < e->paint_w; dx++) {
-                int mx = (e->paint_x + dx) & (MAP_SIZE - 1);
-                int my = (e->paint_y + dy) & (MAP_SIZE - 1);
-                int mapIndex = my * MAP_SIZE + mx;
+                int mx = (e->paint_x + dx) & (gameSettings.mapSize - 1);
+                int my = (e->paint_y + dy) & (gameSettings.mapSize - 1);
+                int mapIndex = my * gameSettings.mapSize + mx;
                 
                 if (bufIndex >= MAX_ENTITY_SIZE * MAX_ENTITY_SIZE) break;
 

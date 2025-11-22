@@ -1,4 +1,5 @@
 #include "input.h"
+#include "settings.h"
 #include "ui.h"
 #include <math.h>
 
@@ -8,8 +9,8 @@ void HandleInput(EngineState *state, Terrain *terrain) {
         DrawLoadingMessage("Generating Terrain (Please Wait)...");
         UnloadTerrain(terrain);
         GenerateProceduralTerrain(terrain);
-        state->camera_x = MAP_SIZE / 2.0f;
-        state->camera_y = MAP_SIZE / 2.0f;
+        state->camera_x = gameSettings.mapSize / 2.0f;
+        state->camera_y = gameSettings.mapSize / 2.0f;
     }
 
     // Edge Scrolling
@@ -67,9 +68,9 @@ void HandleInput(EngineState *state, Terrain *terrain) {
 
     // Bounds Checking
     if (state->camera_x < 0) state->camera_x = 0;
-    if (state->camera_x >= MAP_SIZE) state->camera_x = MAP_SIZE - 1;
+    if (state->camera_x >= gameSettings.mapSize) state->camera_x = gameSettings.mapSize - 1;
     if (state->camera_y < 0) state->camera_y = 0;
-    if (state->camera_y >= MAP_SIZE) state->camera_y = MAP_SIZE - 1;
+    if (state->camera_y >= gameSettings.mapSize) state->camera_y = gameSettings.mapSize - 1;
 
     while (state->phi > 2.0f * PI) state->phi -= 2.0f * PI;
     while (state->phi < 0.0f) state->phi += 2.0f * PI;

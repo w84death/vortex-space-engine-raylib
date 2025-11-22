@@ -1,6 +1,8 @@
 #include "engine.h"
 #include <math.h>
 
+#include "settings.h"
+
 void InitEngine(EngineState *state) {
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vertex Space - Huge Terrain");
     
@@ -9,8 +11,8 @@ void InitEngine(EngineState *state) {
     
     SetTargetFPS(60);
 
-    state->camera_x = MAP_SIZE / 2.0f;
-    state->camera_y = MAP_SIZE / 2.0f;
+    state->camera_x = gameSettings.mapSize / 2.0f;
+    state->camera_y = gameSettings.mapSize / 2.0f;
     state->camera_z = 600.0f;
     state->horizon = -150.0f;
     state->phi = 0.785398f;

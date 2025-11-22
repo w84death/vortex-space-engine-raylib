@@ -1,4 +1,5 @@
 #include "terrain.h"
+#include "settings.h"
 #include <stdlib.h>
 #include <math.h>
 
@@ -53,34 +54,34 @@ void GenerateProceduralTerrain(Terrain *terrain)
     int offsetX = GetRandomValue(0, 10000);
     int offsetY = GetRandomValue(0, 10000);
 
-    Image heightmap = GenImagePerlinNoise(MAP_SIZE, MAP_SIZE, offsetX, offsetY, NOISE_SCALE);
+    Image heightmap = GenImagePerlinNoise(gameSettings.mapSize, gameSettings.mapSize, offsetX, offsetY, gameSettings.noiseScale);
 
     ImageFormat(&heightmap, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
     Color *heightmapData = (Color*)heightmap.data;
 
-    terrain->heightmapRaw = (unsigned char *)malloc(MAP_SIZE * MAP_SIZE);
-    for (int i = 0; i < MAP_SIZE * MAP_SIZE; i++) {
+    terrain->heightmapRaw = (unsigned char *)malloc(gameSettings.mapSize * gameSettings.mapSize);
+    for (int i = 0; i < gameSettings.mapSize * gameSettings.mapSize; i++) {
         terrain->heightmapRaw[i] = heightmapData[i].r;
     }
 
     UnloadImage(heightmap);
     heightmapData = NULL;
 
-    for (int i = 0; i < MAP_SIZE * MAP_SIZE; i++) {
+    for (int i = 0; i < gameSettings.mapSize * gameSettings.mapSize; i++) {
         float h_normalized = terrain->heightmapRaw[i] / 255.0f;
         float h_curved = powf(h_normalized, 3.0f);
         terrain->heightmapRaw[i] = (unsigned char)(h_curved * 255.0f);
     }
 
-    terrain->colormap = GenImageColor(MAP_SIZE, MAP_SIZE, BLACK);
+    terrain->colormap = GenImageColor(gameSettings.mapSize, gameSettings.mapSize, BLACK);
     ImageFormat(&terrain->colormap, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
     terrain->colormapData = (Color*)terrain->colormap.data;
 
-    for (int y = 0; y < MAP_SIZE; y++)
+    for (int y = 0; y < gameSettings.mapSize; y++)
     {
-      for (int x = 0; x < MAP_SIZE; x++)
+      for (int x = 0; x < gameSettings.mapSize; x++)
       {
-        int i = y * MAP_SIZE + x;
+        int i = y * gameSettings.mapSize + x;
         GenerateTerrainPixel(&terrain->colormapData[i], &terrain->heightmapRaw[i]);
       }
     }

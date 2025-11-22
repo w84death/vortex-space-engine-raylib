@@ -15,10 +15,7 @@
 #define MOUSE_SENSITIVITY_X 0.003f
 #define MOUSE_SENSITIVITY_Y 2.0f
 
-// procedural constants
-// MUST BE POWER OF TWO (1024, 2048, 4096, 8192)
-#define MAP_SIZE 8192
-#define NOISE_SCALE 18.0f
+
 
 // Fixed-point math constants
 #define FIXED_POINT_SHIFT 16

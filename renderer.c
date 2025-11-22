@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "settings.h"
 #include <stdlib.h>
 #include <math.h>
 
@@ -76,9 +77,9 @@ void DrawVertexSpace(Renderer *renderer, const EngineState *state, const Terrain
                 continue;
             }
 
-            int map_x_int = (cur_map_x_fixed >> FIXED_POINT_SHIFT) & (MAP_SIZE - 1);
-            int map_y_int = (cur_map_y_fixed >> FIXED_POINT_SHIFT) & (MAP_SIZE - 1);
-            int index = map_y_int * MAP_SIZE + map_x_int;
+            int map_x_int = (cur_map_x_fixed >> FIXED_POINT_SHIFT) & (gameSettings.mapSize - 1);
+            int map_y_int = (cur_map_y_fixed >> FIXED_POINT_SHIFT) & (gameSettings.mapSize - 1);
+            int index = map_y_int * gameSettings.mapSize + map_x_int;
 
             int height = terrain->heightmapRaw[index];
             int screen_y = (int)((state->camera_z - height) * renderer->depth_scale_table[p] + state->horizon);
