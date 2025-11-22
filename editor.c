@@ -128,9 +128,9 @@ void RunEditor(void) {
     // Setup Preview Engine State
     EngineState state = {0};
     state.camera_x = PREVIEW_MAP_SIZE / 2.0f;
-    state.camera_y = PREVIEW_MAP_SIZE / 2.0f;
-    state.camera_z = 200.0f;
-    state.horizon = 100.0f;
+    state.camera_y = PREVIEW_MAP_SIZE / 2.0f + 40.0f;
+    state.camera_z = 100.0f;
+    state.horizon = 100.0f; 
     state.phi = 0;
 
     // Setup Preview Terrain
