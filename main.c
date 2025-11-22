@@ -22,11 +22,12 @@
 
 // procedural constants
 // MUST BE POWER OF TWO (1024, 2048, 4096, 8192)
-#define MAP_SIZE 2048
-#define NOISE_SCALE 5.0f
+#define MAP_SIZE 8192
+#define NOISE_SCALE 14.0f
 
 // Global variables
 Color *frameBuffer;
+unsigned char *heightmapRaw;
 Image heightmap;
 Image colormap;
 Color *heightmapData;
@@ -64,7 +65,7 @@ void DrawVertexSpace(void);
 Color ApplyFog(Color color, float fog_factor);
 void GenerateProceduralTerrain(void);
 void DrawMessage(const char* text);
-void GenerateTerrainPixel(Color *colPixel, Color *hPixel);
+void GenerateTerrainPixel(Color *colPixel, unsigned char *hPixel);
 
 // The Code
 int main(void)
@@ -191,10 +192,15 @@ void GenerateProceduralTerrain(void)
     ImageFormat(&heightmap, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
     heightmapData = (Color*)heightmap.data;
 
+    heightmapRaw = (unsigned char *)malloc(MAP_SIZE * MAP_SIZE);
+    for (int i = 0; i < MAP_SIZE * MAP_SIZE; i++) {
+        heightmapRaw[i] = heightmapData[i].r;
+    }
+
     for (int i = 0; i < MAP_SIZE * MAP_SIZE; i++) {
         float h_normalized = heightmapData[i].r / 255.0f;
         float h_curved = powf(h_normalized, 3.0f);
-        heightmapData[i].r = (unsigned char)(h_curved * 255.0f);
+        heightmapRaw[i] = (unsigned char)(h_curved * 255.0f);
     }
 
     colormap = GenImageColor(MAP_SIZE, MAP_SIZE, BLACK);
@@ -206,17 +212,17 @@ void GenerateProceduralTerrain(void)
       for (int x = 0; x < MAP_SIZE; x++)
       {
         int i = y * MAP_SIZE + x;
-        GenerateTerrainPixel(&colormapData[i], &heightmapData[i]);
+        GenerateTerrainPixel(&colormapData[i], &heightmapRaw[i]);
       }
     }
 }
 
-void GenerateTerrainPixel(Color *colPixel, Color *hPixel)
+void GenerateTerrainPixel(Color *colPixel, unsigned char *hPixel)
 {
-  unsigned char h = hPixel->r;
+  unsigned char h = *hPixel;
 
   if (h < 60) {
-    hPixel->r = 60;
+    *hPixel = 60;
     if (h < 40) *colPixel = waterDeep;
     else *colPixel = waterShallow;
     return;
@@ -233,7 +239,7 @@ void GenerateTerrainPixel(Color *colPixel, Color *hPixel)
   else if (h < 140 + GetRandomValue(-20, 50)) {
     *colPixel = grassHigh;
     colPixel->g += GetRandomValue(-25, 10);
-    hPixel->r += GetRandomValue(0, 10);
+    *hPixel += GetRandomValue(0, 10);
   }
   else if (h < 215 + GetRandomValue(-10, 10)) {
     *colPixel = rock;
@@ -301,7 +307,7 @@ void DrawVertexSpace(void)
       int map_y_int = (int)cur_map_y & (MAP_SIZE - 1);
       int index = map_y_int * MAP_SIZE + map_x_int;
 
-      int height = heightmapData[index].r;
+      int height = heightmapRaw[index];
       int screen_y = (int)((camera_z - height) / (float)p * MAP_Z_SCALE + horizon);
 
       if (screen_y < lowest_horizon){
