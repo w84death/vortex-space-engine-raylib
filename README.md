@@ -2,8 +2,7 @@
 
 A high-performance 3D terrain rendering engine built with RayLib in C.
 
-![Screenshot](media/screenshot-v3_4a.png)
-![Screenshot](media/screenshot-v3_4b.png)
+![Screenshot](media/screenshot-v3_5.png)
 
 ## Download
 
@@ -15,6 +14,10 @@ Go to the [Relases](https://github.com/w84death/vortex-space-engine-raylib/relea
 - Optimized performance with modern C99
 - Cross-platform support (Linux & Windows)
 - Built on the powerful RayLib graphics library
+
+## Build-in Model Editor
+
+![Editro Screenshot](media/screenshot-editor.png)
 
 ## Building
 
