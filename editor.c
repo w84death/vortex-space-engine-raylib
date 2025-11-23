@@ -178,7 +178,7 @@ void RunEditor(void) {
         state.camera_y = cy + sinf(orbitAngle) * radius;
 
         // Look at center (phi=0 is North/Negative Y)
-        state.phi = orbitAngle - 1.5707f;
+        state.phi = 1.5707f - orbitAngle;
 
         state.sinphi = sinf(state.phi);
         state.cosphi = cosf(state.phi);
