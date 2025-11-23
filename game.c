@@ -86,21 +86,21 @@ void RunSetup() {
       break;
     case 1: // 2048
       gameSettings.mapSize = 2048;
-      gameSettings.noiseScale = 6.0f;
+      gameSettings.noiseScale = 4.0f;
       gameSettings.shipCount = 20;
       gameSettings.unitCount = 120;
       gameSettings.buildingCount = 40;
       break;
     case 2: // 4096
       gameSettings.mapSize = 4096;
-      gameSettings.noiseScale = 10.0f;
+      gameSettings.noiseScale = 8.0f;
       gameSettings.shipCount = 100;
       gameSettings.unitCount = 250;
       gameSettings.buildingCount = 80;
       break;
     case 3: // 8192
       gameSettings.mapSize = 8192;
-      gameSettings.noiseScale = 18.0f;
+      gameSettings.noiseScale = 16.0f;
       gameSettings.shipCount = 500;
       gameSettings.unitCount = 1000;
       gameSettings.buildingCount = 100;

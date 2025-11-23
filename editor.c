@@ -94,7 +94,7 @@ void UpdatePreviewTerrain(Terrain *t) {
     // Clear to Water
     for(int i=0; i<PREVIEW_MAP_SIZE*PREVIEW_MAP_SIZE; i++) {
         t->heightmapRaw[i] = LEVEL_WATER;
-        t->colormapData[i] = COLOR_SHALLOW_WATER; // Water
+        t->colormapData[i] = DB_VENICE_BLUE; // Water
     }
 
     // Paint Model in center

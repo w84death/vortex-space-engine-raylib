@@ -16,7 +16,7 @@ void InitRenderer(Renderer *renderer) {
     renderer->depth_scale_table[i] = MAP_Z_SCALE / (float)i;
   }
 
-  renderer->sky_color = COLOR_SKY;
+  renderer->sky_color = DB_WIND_BLUE;
 }
 
 void ClearFrameBuffer(Renderer *renderer, Color color) {

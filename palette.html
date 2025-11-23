@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DawnBringer-32 Palette</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 30px;
+            color: #333;
+        }
+        p {
+            margin-bottom: 40px;
+            color: #666;
+        }
+        .palette-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .color-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .color-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+        }
+        .color-swatch {
+            height: 100px;
+            width: 100%;
+        }
+        .color-name {
+            padding: 10px;
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #555;
+            word-wrap: break-word;
+            font-family: monospace;
+        }
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 4px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 17px;
+            opacity: 0;
+            transition: opacity 0.5s, bottom 0.5s;
+        }
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>DawnBringer-32 Palette</h1>
+    <p>Click a color card to copy the DB_* definition name to your clipboard.</p>
+
+    <div class="palette-container" id="palette"></div>
+    <div id="toast">Copied to clipboard!</div>
+
+    <script>
+        const colors = [
+            { name: "DB_BLACK",         r: 0,   g: 0,   b: 0   },
+            { name: "DB_VALHALLA",      r: 34,  g: 32,  b: 52  },
+            { name: "DB_LOULOU",        r: 69,  g: 40,  b: 60  },
+            { name: "DB_OILED_CEDAR",   r: 102, g: 57,  b: 49  },
+            { name: "DB_ROPE",          r: 143, g: 86,  b: 59  },
+            { name: "DB_TAHITI_GOLD",   r: 223, g: 113, b: 38  },
+            { name: "DB_TWINE",         r: 217, g: 160, b: 102 },
+            { name: "DB_PANCHO",        r: 238, g: 195, b: 154 },
+            { name: "DB_GOLDEN_FIZZ",   r: 251, g: 242, b: 54  },
+            { name: "DB_ATLANTIS",      r: 153, g: 229, b: 80  },
+            { name: "DB_CHRISTI",       r: 106, g: 190, b: 48  },
+            { name: "DB_ELF_GREEN",     r: 55,  g: 148, b: 110 },
+            { name: "DB_DELL",          r: 75,  g: 105, b: 47  },
+            { name: "DB_VERDUN_GREEN",  r: 82,  g: 75,  b: 36  },
+            { name: "DB_OPAL",          r: 50,  g: 60,  b: 57  },
+            { name: "DB_DEEP_KOAMARU",  r: 63,  g: 63,  b: 116 },
+            { name: "DB_VENICE_BLUE",   r: 48,  g: 96,  b: 130 },
+            { name: "DB_ROYAL_BLUE",    r: 91,  g: 110, b: 225 },
+            { name: "DB_KURT",          r: 99,  g: 155, b: 255 },
+            { name: "DB_WIND_BLUE",     r: 95,  g: 205, b: 228 },
+            { name: "DB_LINK_WATER",    r: 203, g: 219, b: 252 },
+            { name: "DB_WHITE",         r: 255, g: 255, b: 255 },
+            { name: "DB_SILVER",        r: 155, g: 173, b: 183 },
+            { name: "DB_IRON",          r: 132, g: 126, b: 135 },
+            { name: "DB_SHUTTLE_GREY",  r: 105, g: 106, b: 106 },
+            { name: "DB_CASCADE",       r: 89,  g: 86,  b: 82  },
+            { name: "DB_MING",          r: 118, g: 66,  b: 138 },
+            { name: "DB_MOZART",        r: 172, g: 50,  b: 50  },
+            { name: "DB_OLD_ROSE",      r: 217, g: 87,  b: 99  },
+            { name: "DB_MAUVELOUS",     r: 215, g: 123, b: 186 },
+            { name: "DB_APPLE_BLOSSOM", r: 143, g: 151, b: 74  },
+            { name: "DB_SAPLING",       r: 138, g: 111, b: 48  }
+        ];
+
+        const paletteDiv = document.getElementById('palette');
+        const toast = document.getElementById('toast');
+
+        colors.forEach(color => {
+            const card = document.createElement('div');
+            card.className = 'color-card';
+
+            const swatch = document.createElement('div');
+            swatch.className = 'color-swatch';
+            swatch.style.backgroundColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
+
+            const name = document.createElement('div');
+            name.className = 'color-name';
+            name.textContent = color.name;
+
+            card.appendChild(swatch);
+            card.appendChild(name);
+
+            card.onclick = () => {
+                navigator.clipboard.writeText(color.name).then(() => {
+                    showToast(`Copied ${color.name} to clipboard`);
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+            };
+
+            paletteDiv.appendChild(card);
+        });
+
+        function showToast(message) {
+            toast.textContent = message;
+            toast.className = "show";
+            setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+    </script>
+</body>
+</html>

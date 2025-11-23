@@ -9,36 +9,28 @@ static void GenerateTerrainPixel(Color *colPixel, unsigned char *hPixel)
 
   if (h < LEVEL_WATER) {
     *hPixel = LEVEL_WATER;
-    if (h < LEVEL_WATER - 20) *colPixel = COLOR_DEEP_OCEAN;
-    else *colPixel = COLOR_SHALLOW_WATER;
+    if (h < LEVEL_WATER - 12) *colPixel = DB_VENICE_BLUE;
+    else *colPixel = DB_ROYAL_BLUE;
     return;
   }
   else if (h < LEVEL_SAND + GetRandomValue(-5, 15)) {
     if (h < LEVEL_WATER + 4) {
-        *colPixel = COLOR_WET_SAND;
+        *colPixel = DB_TWINE;
     } else {
-        *colPixel = COLOR_BEACH_SAND;
-        colPixel->r += GetRandomValue(-10, 10);
-        colPixel->g += GetRandomValue(-10, 10);
+        *colPixel = DB_PANCHO;
     }
   }
   else if (h < LEVEL_GRASS_LOW + GetRandomValue(-10, 25)) {
-    *colPixel = COLOR_GRASS;
-    colPixel->g += GetRandomValue(-15, 15);
+    *colPixel = (Color[]){DB_CHRISTI, DB_ELF_GREEN}[GetRandomValue(0, 1)];
   }
   else if (h < LEVEL_GRASS_HIGH + GetRandomValue(-20, 50)) {
-    *colPixel = COLOR_TREES;
-    colPixel->g += GetRandomValue(-25, 10);
+    *colPixel = (Color[]){ DB_APPLE_BLOSSOM, DB_DELL, DB_VERDUN_GREEN, DB_SAPLING }[GetRandomValue(0, 3)];
     *hPixel += GetRandomValue(0, 10);
   }
   else if (h < LEVEL_ROCK + GetRandomValue(-10, 10)) {
-    *colPixel = COLOR_ROCK;
-    int r = GetRandomValue(-10, 10);
-    colPixel->r += r;
-    colPixel->g += r;
-    colPixel->b += r;
+    *colPixel = DB_SHUTTLE_GREY;
   }else {
-    *colPixel = COLOR_SNOW;
+    *colPixel = DB_WHITE;
   }
 }
 
