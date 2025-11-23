@@ -12,9 +12,9 @@
 #include <string.h>
 
 #define EDITOR_GRID_SIZE MAX_ENTITY_SIZE
-#define CELL_SIZE 24
+#define CELL_SIZE 22
 #define GRID_OFFSET_X 20
-#define GRID_OFFSET_Y 20
+#define GRID_OFFSET_Y 50
 
 // Preview Terrain Size
 #define PREVIEW_MAP_SIZE 512
@@ -94,8 +94,17 @@ void HandleGridInput() {
 
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && insideModel) {
         int index = gy * MAX_ENTITY_SIZE + gx;
-        currentModel.heights[index] = (unsigned char)selectedHeight;
-        currentModel.colors[index] = selectedColor;
+
+        if (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) {
+            if (currentModel.heights[index] > 0) selectedColor = currentModel.colors[index];
+        }
+        else if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) {
+            if (currentModel.heights[index] > 0) selectedHeight = currentModel.heights[index];
+        }
+        else {
+            currentModel.heights[index] = (unsigned char)selectedHeight;
+            currentModel.colors[index] = selectedColor;
+        }
     }
 
     if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && insideModel) {
@@ -204,22 +213,51 @@ void RunEditor(void) {
         // Draw Editor UI on Left
         DrawEditorGrid();
 
-        // Controls UI
+        // Load UI
+        int loadX = 20;
+        int loadY = 15;
+        DrawText("Load:", loadX, loadY, 20, BLACK);
+
+        if (modelRegistry.count > 0) {
+             if (GuiButton((Rectangle){loadX + 60, loadY-2, 20, 24}, "<")) {
+                 loadedModelIndex--;
+                 if (loadedModelIndex < 0) loadedModelIndex = modelRegistry.count - 1;
+             }
+
+             DrawText(modelRegistry.models[loadedModelIndex].name, loadX + 90, loadY, 20, BLACK);
+
+             if (GuiButton((Rectangle){loadX + 200, loadY-2, 20, 24}, ">")) {
+                 loadedModelIndex++;
+                 if (loadedModelIndex >= modelRegistry.count) loadedModelIndex = 0;
+             }
+
+             if (GuiButton((Rectangle){loadX + 230, loadY-2, 50, 24}, "LOAD")) {
+                 currentModel = modelRegistry.models[loadedModelIndex];
+                 // Update name field
+                 strncpy(modelName, currentModel.name, 63);
+                 nameLetterCount = strlen(modelName);
+                 currentCategory = currentModel.type;
+                 selectedHeight = 10;
+             }
+        } else {
+             DrawText("No models", loadX + 60, loadY, 20, GRAY);
+        }
+
+        // Camera Presets (Top Right)
+        int camX = 800;
+        int camY = 15;
+        if (GuiButton((Rectangle){camX + 80, camY, 50, 20}, "Front")) orbitAngle = PI/2.0f;
+        if (GuiButton((Rectangle){camX + 140, camY, 50, 20}, "Back")) orbitAngle = 3.0f*PI/2.0f;
+        if (GuiButton((Rectangle){camX + 200, camY, 50, 20}, "Left")) orbitAngle = PI;
+        if (GuiButton((Rectangle){camX + 260, camY, 50, 20}, "Right")) orbitAngle = 0.0f;
+
         int uiX = 20;
         int uiY = 800;
-        DrawText("LMB: Paint  RMB: Erase", uiX, uiY, 20, BLACK);
-        DrawText("Arrows: Orbit", uiX, uiY + 30, 20, BLACK);
-        
-        // Camera Presets
-        if (GuiButton((Rectangle){uiX + 160, uiY + 30, 50, 20}, "Front")) orbitAngle = PI/2.0f;
-        if (GuiButton((Rectangle){uiX + 220, uiY + 30, 50, 20}, "Back")) orbitAngle = 3.0f*PI/2.0f;
-        if (GuiButton((Rectangle){uiX + 280, uiY + 30, 50, 20}, "Left")) orbitAngle = PI;
-        if (GuiButton((Rectangle){uiX + 340, uiY + 30, 50, 20}, "Right")) orbitAngle = 0.0f;
 
         // Height Control
-        DrawText(TextFormat("Height: %d", selectedHeight), uiX + 250, uiY, 20, BLACK);
+        DrawText(TextFormat("Height: %d", selectedHeight), uiX, uiY, 20, BLACK);
         float hVal = (float)selectedHeight;
-        hVal = GuiSlider((Rectangle){uiX + 380, uiY, 150, 20}, "H", hVal, 1, MAX_ENTITY_SIZE);
+        hVal = GuiSlider((Rectangle){uiX, uiY + 30, 180, 20}, "H", hVal, 1, MAX_ENTITY_SIZE);
         selectedHeight = (int)hVal;
 
         // Palette
@@ -255,9 +293,9 @@ void RunEditor(void) {
         DrawRectangleLines(palX - 50, palY, 40, 40, BLACK);
 
         // Size Controls
-        DrawText(TextFormat("Size: %dx%d", currentModel.width, currentModel.length), uiX + 200, 20, 20, BLACK);
-        if (GuiButton((Rectangle){uiX + 320, 20, 20, 20}, "+")) { currentModel.width++; currentModel.length++; }
-        if (GuiButton((Rectangle){uiX + 350, 20, 20, 20}, "-")) { currentModel.width--; currentModel.length--; }
+        DrawText(TextFormat("Size: %dx%d", currentModel.width, currentModel.length), 400, 15, 20, BLACK);
+        if (GuiButton((Rectangle){520, 15, 20, 20}, "+")) { currentModel.width++; currentModel.length++; }
+        if (GuiButton((Rectangle){550, 15, 20, 20}, "-")) { currentModel.width--; currentModel.length--; }
         if (currentModel.width > MAX_ENTITY_SIZE) currentModel.width = MAX_ENTITY_SIZE;
         if (currentModel.width < 1) currentModel.width = 1;
         currentModel.length = currentModel.width;
@@ -306,34 +344,7 @@ void RunEditor(void) {
             saveTimer--;
         }
 
-        // Load UI
-        int loadX = saveX + 380;
-        DrawText("Load:", loadX, saveY, 20, BLACK);
 
-        if (modelRegistry.count > 0) {
-             if (GuiButton((Rectangle){loadX + 60, saveY-2, 20, 24}, "<")) {
-                 loadedModelIndex--;
-                 if (loadedModelIndex < 0) loadedModelIndex = modelRegistry.count - 1;
-             }
-
-             DrawText(modelRegistry.models[loadedModelIndex].name, loadX + 90, saveY, 20, BLACK);
-
-             if (GuiButton((Rectangle){loadX + 200, saveY-2, 20, 24}, ">")) {
-                 loadedModelIndex++;
-                 if (loadedModelIndex >= modelRegistry.count) loadedModelIndex = 0;
-             }
-
-             if (GuiButton((Rectangle){loadX + 230, saveY-2, 50, 24}, "LOAD")) {
-                 currentModel = modelRegistry.models[loadedModelIndex];
-                 // Update name field
-                 strncpy(modelName, currentModel.name, 63);
-                 nameLetterCount = strlen(modelName);
-                 currentCategory = currentModel.type;
-                 selectedHeight = 10;
-             }
-        } else {
-             DrawText("No models", loadX + 60, saveY, 20, GRAY);
-        }
 
         EndDrawing();
     }
