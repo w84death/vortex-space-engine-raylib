@@ -173,24 +173,21 @@ int main(void)
             bool clickedItem = false;
 
             // Check items
-            for(int i=0; i<3; i++) {
-                Rectangle itemRect = {spawnMenuPos.x, spawnMenuPos.y + i*30, 120, 30};
+            for(int i=0; i < modelRegistry.count; i++) {
+                Rectangle itemRect = {spawnMenuPos.x, spawnMenuPos.y + i*20, 150, 20};
                 if (CheckCollisionPointRec(mouse, itemRect)) {
-                    EntityType type;
-                    if (i==0) type = ENTITY_SHIP;
-                    else if (i==1) type = ENTITY_UNIT;
-                    else type = ENTITY_BUILDING;
-
+                    VoxelModel *m = &modelRegistry.models[i];
+                    
                     // Validate
                     int index = spawnMapY * gameSettings.mapSize + spawnMapX;
                     unsigned char h = terrain.heightmapRaw[index];
                     bool valid = false;
 
-                    if (type == ENTITY_SHIP && h <= LEVEL_WATER) valid = true;
-                    if ((type == ENTITY_UNIT || type == ENTITY_BUILDING) && h > LEVEL_WATER) valid = true;
+                    if (m->type == ENTITY_SHIP && h <= LEVEL_WATER) valid = true;
+                    if ((m->type == ENTITY_UNIT || m->type == ENTITY_BUILDING) && h > LEVEL_WATER) valid = true;
 
                     if (valid) {
-                        AddEntity(entityManager, type, (float)spawnMapX, (float)spawnMapY);
+                        AddEntityFromModel(entityManager, m->type, (float)spawnMapX, (float)spawnMapY, m);
                     }
 
                     clickedItem = true;
@@ -216,23 +213,24 @@ int main(void)
 
             if (showSpawnMenu) {
                 // Draw Menu
-                int menuW = 120;
-                int menuH = 90;
+                int menuW = 150;
+                int menuH = (modelRegistry.count > 0) ? modelRegistry.count * 20 : 30;
                 DrawRectangle(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, LIGHTGRAY);
                 DrawRectangleLines(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, DARKGRAY);
 
-                const char* items[] = {"Spawn Ship", "Spawn Unit", "Spawn Building"};
-                for(int i=0; i<3; i++) {
-                    int y = spawnMenuPos.y + i*30;
+                if (modelRegistry.count == 0) {
+                     DrawText("No Models", spawnMenuPos.x + 10, spawnMenuPos.y + 10, 10, DARKGRAY);
+                }
 
-                    // Highlight hover
-                    Rectangle itemRect = {spawnMenuPos.x, y, menuW, 30};
+                for(int i=0; i < modelRegistry.count; i++) {
+                    int y = spawnMenuPos.y + i*20;
+                    Rectangle itemRect = {spawnMenuPos.x, y, menuW, 20};
+                    
                     if (CheckCollisionPointRec(GetMousePosition(), itemRect)) {
                         DrawRectangleRec(itemRect, WHITE);
                     }
-
-                    DrawText(items[i], spawnMenuPos.x + 10, y + 8, 10, BLACK);
-                    if (i < 2) DrawLine(spawnMenuPos.x, y+30, spawnMenuPos.x+menuW, y+30, GRAY);
+                    
+                    DrawText(modelRegistry.models[i].name, spawnMenuPos.x + 10, y + 5, 10, BLACK);
                 }
             }
         EndDrawing();

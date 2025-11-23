@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 
 #define EDITOR_GRID_SIZE MAX_ENTITY_SIZE
 #define CELL_SIZE 24
@@ -28,6 +29,13 @@ static const Color PALETTE[32] = {
 static VoxelModel currentModel;
 static Color selectedColor = DB_MOZART;
 static int selectedHeight = 10;
+
+// Save UI State
+static char modelName[64] = "model";
+static int nameLetterCount = 5;
+static EntityType currentCategory = ENTITY_SHIP;
+static int saveTimer = 0;
+static int loadedModelIndex = 0;
 
 // Forward declaration
 bool GuiButton(Rectangle bounds, const char* text);
@@ -128,6 +136,7 @@ void RunEditor(void) {
     SetTargetFPS(60);
 
     InitEditorModel();
+    LoadAllModels();
 
     // Override game settings for preview map size
     int oldMapSize = gameSettings.mapSize;
@@ -160,8 +169,8 @@ void RunEditor(void) {
 
         if (IsKeyDown(KEY_UP)) state.camera_z += 2.0f;
         if (IsKeyDown(KEY_DOWN)) state.camera_z -= 2.0f;
-        if (IsKeyDown(KEY_LEFT)) orbitAngle -= 0.02f;
-        if (IsKeyDown(KEY_RIGHT)) orbitAngle += 0.02f;
+        if (IsKeyDown(KEY_LEFT)) orbitAngle += 0.02f;
+        if (IsKeyDown(KEY_RIGHT)) orbitAngle -= 0.02f;
 
         float cx = PREVIEW_MAP_SIZE / 2.0f;
         float cy = PREVIEW_MAP_SIZE / 2.0f;
@@ -199,7 +208,13 @@ void RunEditor(void) {
         int uiX = 20;
         int uiY = 800;
         DrawText("LMB: Paint  RMB: Erase", uiX, uiY, 20, BLACK);
-        DrawText("Arrows: Preview", uiX, uiY + 30, 20, BLACK);
+        DrawText("Arrows: Orbit", uiX, uiY + 30, 20, BLACK);
+        
+        // Camera Presets
+        if (GuiButton((Rectangle){uiX + 160, uiY + 30, 50, 20}, "Front")) orbitAngle = PI/2.0f;
+        if (GuiButton((Rectangle){uiX + 220, uiY + 30, 50, 20}, "Back")) orbitAngle = 3.0f*PI/2.0f;
+        if (GuiButton((Rectangle){uiX + 280, uiY + 30, 50, 20}, "Left")) orbitAngle = PI;
+        if (GuiButton((Rectangle){uiX + 340, uiY + 30, 50, 20}, "Right")) orbitAngle = 0.0f;
 
         // Height Control
         DrawText(TextFormat("Height: %d", selectedHeight), uiX + 250, uiY, 20, BLACK);
@@ -246,6 +261,79 @@ void RunEditor(void) {
         if (currentModel.width > MAX_ENTITY_SIZE) currentModel.width = MAX_ENTITY_SIZE;
         if (currentModel.width < 1) currentModel.width = 1;
         currentModel.length = currentModel.width;
+
+        // Save UI
+        int saveX = uiX;
+        int saveY = 860;
+
+        DrawText("Name:", saveX, saveY, 20, BLACK);
+        DrawRectangle(saveX + 60, saveY - 2, 150, 24, WHITE);
+        DrawRectangleLines(saveX + 60, saveY - 2, 150, 24, DARKGRAY);
+        DrawText(modelName, saveX + 65, saveY, 20, BLACK);
+
+        // Type Input
+        int key = GetCharPressed();
+        while (key > 0) {
+            if ((key >= 32) && (key <= 125) && (nameLetterCount < 63)) {
+                modelName[nameLetterCount] = (char)key;
+                modelName[nameLetterCount+1] = '\0';
+                nameLetterCount++;
+            }
+            key = GetCharPressed();
+        }
+        if (IsKeyPressed(KEY_BACKSPACE)) {
+            nameLetterCount--;
+            if (nameLetterCount < 0) nameLetterCount = 0;
+            modelName[nameLetterCount] = '\0';
+        }
+
+        // Category
+        const char* catNames[] = {"SHIP", "UNIT", "BUILDING"};
+        if (GuiButton((Rectangle){saveX + 220, saveY - 2, 80, 24}, catNames[currentCategory])) {
+            currentCategory = (EntityType)((int)currentCategory + 1);
+            if (currentCategory > ENTITY_BUILDING) currentCategory = ENTITY_SHIP;
+        }
+
+        if (GuiButton((Rectangle){saveX + 310, saveY - 2, 60, 24}, "SAVE")) {
+            strncpy(currentModel.name, modelName, 63);
+            currentModel.type = currentCategory;
+            SaveModel(&currentModel);
+            saveTimer = 60;
+        }
+
+        if (saveTimer > 0) {
+            DrawText("Saved!", saveX + 310, saveY - 20, 20, GREEN);
+            saveTimer--;
+        }
+
+        // Load UI
+        int loadX = saveX + 380;
+        DrawText("Load:", loadX, saveY, 20, BLACK);
+
+        if (modelRegistry.count > 0) {
+             if (GuiButton((Rectangle){loadX + 60, saveY-2, 20, 24}, "<")) {
+                 loadedModelIndex--;
+                 if (loadedModelIndex < 0) loadedModelIndex = modelRegistry.count - 1;
+             }
+
+             DrawText(modelRegistry.models[loadedModelIndex].name, loadX + 90, saveY, 20, BLACK);
+
+             if (GuiButton((Rectangle){loadX + 200, saveY-2, 20, 24}, ">")) {
+                 loadedModelIndex++;
+                 if (loadedModelIndex >= modelRegistry.count) loadedModelIndex = 0;
+             }
+
+             if (GuiButton((Rectangle){loadX + 230, saveY-2, 50, 24}, "LOAD")) {
+                 currentModel = modelRegistry.models[loadedModelIndex];
+                 // Update name field
+                 strncpy(modelName, currentModel.name, 63);
+                 nameLetterCount = strlen(modelName);
+                 currentCategory = currentModel.type;
+                 selectedHeight = 10;
+             }
+        } else {
+             DrawText("No models", loadX + 60, saveY, 20, GRAY);
+        }
 
         EndDrawing();
     }

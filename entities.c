@@ -3,15 +3,133 @@
 #include "constants.h"
 #include <stdlib.h>
 #include <math.h>
+#include <stdio.h>
+#include <string.h>
+#include <dirent.h>
+
+ModelRegistry modelRegistry = {0};
+
+void InitModelRegistry() {
+    modelRegistry.count = 0;
+}
+
+void LoadModelFromFile(const char* filepath, EntityType type) {
+    if (modelRegistry.count >= MAX_LOADED_MODELS) return;
+    
+    FILE *f = fopen(filepath, "r");
+    if (!f) return;
+    
+    VoxelModel *m = &modelRegistry.models[modelRegistry.count];
+    
+    // Clear model first
+    for(int i=0; i<MAX_ENTITY_SIZE*MAX_ENTITY_SIZE; i++) {
+        m->heights[i] = 0;
+        m->colors[i] = BLANK;
+    }
+
+    if (fscanf(f, "%d %d", &m->width, &m->length) != 2) { fclose(f); return; }
+    
+    if (m->width > MAX_ENTITY_SIZE) m->width = MAX_ENTITY_SIZE;
+    if (m->length > MAX_ENTITY_SIZE) m->length = MAX_ENTITY_SIZE;
+    
+    for(int y=0; y < m->length; y++) {
+        for(int x=0; x < m->width; x++) {
+            int h, r, g, b, a;
+            if (fscanf(f, "%d %d %d %d %d", &h, &r, &g, &b, &a) == 5) {
+                int idx = y * MAX_ENTITY_SIZE + x;
+                m->heights[idx] = (unsigned char)h;
+                m->colors[idx] = (Color){r,g,b,a};
+            }
+        }
+    }
+    
+    // Extract name
+    const char* base = strrchr(filepath, '/');
+    if (!base) base = filepath; else base++;
+    strncpy(m->name, base, 63);
+    char* ext = strrchr(m->name, '.');
+    if (ext) *ext = 0;
+    
+    m->type = type;
+    
+    fclose(f);
+    modelRegistry.count++;
+    TraceLog(LOG_INFO, "Loaded model: %s", m->name);
+}
+
+void LoadModelsFromDir(const char* dirname, EntityType type) {
+    DIR *d;
+    struct dirent *dir;
+    d = opendir(dirname);
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if (dir->d_name[0] == '.') continue;
+            char path[256];
+            snprintf(path, sizeof(path), "%s/%s", dirname, dir->d_name);
+            LoadModelFromFile(path, type);
+        }
+        closedir(d);
+    }
+}
+
+void LoadAllModels() {
+    InitModelRegistry();
+    LoadModelsFromDir("models/ship", ENTITY_SHIP);
+    LoadModelsFromDir("models/unit", ENTITY_UNIT);
+    LoadModelsFromDir("models/building", ENTITY_BUILDING);
+}
+
+void SaveModel(const VoxelModel *model) {
+    char path[256];
+    const char* subfolder = "unit";
+    if (model->type == ENTITY_SHIP) subfolder = "ship";
+    if (model->type == ENTITY_BUILDING) subfolder = "building";
+    
+    // Use a default name if empty or generic
+    const char* name = (strlen(model->name) > 0) ? model->name : "unnamed";
+    
+    snprintf(path, sizeof(path), "models/%s/%s.txt", subfolder, name);
+    
+    FILE *f = fopen(path, "w");
+    if (!f) return;
+    
+    fprintf(f, "%d %d\n", model->width, model->length);
+    for(int y=0; y < model->length; y++) {
+        for(int x=0; x < model->width; x++) {
+            int idx = y * MAX_ENTITY_SIZE + x;
+            unsigned char h = model->heights[idx];
+            Color c = model->colors[idx];
+            fprintf(f, "%d %d %d %d %d\n", h, c.r, c.g, c.b, c.a);
+        }
+    }
+    fclose(f);
+    TraceLog(LOG_INFO, "Saved model to %s", path);
+}
+
+VoxelModel* GetRandomModel(EntityType type) {
+    int indices[MAX_LOADED_MODELS];
+    int count = 0;
+    for(int i=0; i<modelRegistry.count; i++) {
+        if (modelRegistry.models[i].type == type) {
+            indices[count++] = i;
+        }
+    }
+    
+    if (count > 0) {
+        return &modelRegistry.models[indices[GetRandomValue(0, count-1)]];
+    }
+    return NULL;
+}
 
 void InitEntityManager(EntityManager *manager) {
+    LoadAllModels(); // Load models on init
     manager->count = 0;
     for(int i=0; i<MAX_ENTITIES; i++) {
         manager->list[i].active = false;
     }
 }
 
-void AddEntity(EntityManager *manager, EntityType type, float x, float y) {
+void AddEntityFromModel(EntityManager *manager, EntityType type, float x, float y, const VoxelModel *model) {
     int slot = -1;
     // Find first inactive slot
     for(int i=0; i<MAX_ENTITIES; i++) {
@@ -29,13 +147,22 @@ void AddEntity(EntityManager *manager, EntityType type, float x, float y) {
     e->type = type;
     e->x = x;
     e->y = y;
-    
+    e->model = model;
+
+    if (e->model) {
+        e->width = model->width;
+        e->length = model->length;
+        e->height_shape = 0; // Driven by model
+    }
+
     if (type == ENTITY_SHIP) {
-        e->width = 8;
-        e->length = 20;
-        e->height_shape = 8; 
-        e->z_offset = LEVEL_WATER;    // Water level
-        e->color = (Color){100, 100, 110, 255}; // Ironclad gray
+        if (!e->model) {
+            e->width = 8;
+            e->length = 20;
+            e->height_shape = 8; 
+            e->color = (Color){100, 100, 110, 255};
+        }
+        e->z_offset = LEVEL_WATER;
         
         e->speed = (float)GetRandomValue(10, 30); // Random speed
         float angle = (float)GetRandomValue(0, 628) / 100.0f; // 0 to 2PI
@@ -43,11 +170,13 @@ void AddEntity(EntityManager *manager, EntityType type, float x, float y) {
         e->dy = sinf(angle) * e->speed;
     }
     else if (type == ENTITY_UNIT) {
-        e->width = 2;
-        e->length = 2;
-        e->height_shape = 4;
-        e->z_offset = 0; // Ignored for land units
-        e->color = BLACK;
+        if (!e->model) {
+            e->width = 2;
+            e->length = 2;
+            e->height_shape = 4;
+            e->color = BLACK;
+        }
+        e->z_offset = 0;
         
         e->speed = (float)GetRandomValue(20, 40);
         float angle = (float)GetRandomValue(0, 628) / 100.0f;
@@ -55,11 +184,13 @@ void AddEntity(EntityManager *manager, EntityType type, float x, float y) {
         e->dy = sinf(angle) * e->speed;
     }
     else if (type == ENTITY_BUILDING) {
-        e->width = 8;
-        e->length = 8;
-        e->height_shape = 8;
-        e->z_offset = 0; // Ignored for buildings
-        e->color = BROWN;
+        if (!e->model) {
+            e->width = 8;
+            e->length = 8;
+            e->height_shape = 8;
+            e->color = BROWN;
+        }
+        e->z_offset = 0;
         
         e->speed = 0;
         e->dx = 0;
@@ -67,6 +198,10 @@ void AddEntity(EntityManager *manager, EntityType type, float x, float y) {
     }
     
     manager->count++;
+}
+
+void AddEntity(EntityManager *manager, EntityType type, float x, float y) {
+    AddEntityFromModel(manager, type, x, y, GetRandomModel(type));
 }
 
 void UpdateEntities(EntityManager *manager, float deltaTime, const Terrain *terrain) {
@@ -169,23 +304,32 @@ void PaintEntities(EntityManager *manager, Terrain *terrain) {
                 unsigned char currentH = terrain->heightmapRaw[mapIndex];
                 
                 unsigned char baseH = (e->type == ENTITY_SHIP) ? (unsigned char)e->z_offset : currentH;
-                unsigned char entityH = baseH + (unsigned char)e->height_shape;
+                unsigned char entityH = 0;
+                Color entityC = BLANK;
+                bool draw = false;
 
-                if (entityH >= currentH) {
-                    terrain->heightmapRaw[mapIndex] = entityH;
-                    
-                    // Simple detail: border is darker
+                if (e->model) {
+                    int idx = dy * MAX_ENTITY_SIZE + dx;
+                    unsigned char h = e->model->heights[idx];
+                    if (h > 0) {
+                        entityH = baseH + h;
+                        entityC = e->model->colors[idx];
+                        draw = true;
+                    }
+                } else {
+                    // Procedural Fallback
+                    entityH = baseH + (unsigned char)e->height_shape;
                     if (dx == 0 || dx == e->width-1 || dy == 0 || dy == e->length-1) {
-                         terrain->colormapData[mapIndex] = (Color){e->color.r/2, e->color.g/2, e->color.b/2, 255};
+                         entityC = (Color){e->color.r/2, e->color.g/2, e->color.b/2, 255};
                     } else {
-                         terrain->colormapData[mapIndex] = e->color;
+                         entityC = e->color;
                     }
                     
-                    // Draw a little "cabin" box on the ship
+                    // Procedural details
                     if (e->type == ENTITY_SHIP) {
                         if (dx >= 2 && dx <= e->width-3 && dy >= 2 && dy <= 6) {
-                            terrain->heightmapRaw[mapIndex] += 4; // Taller cabin
-                            terrain->colormapData[mapIndex] = RAYWHITE;
+                            entityH += 4;
+                            entityC = RAYWHITE;
                         }
                     }
                     else if (e->type == ENTITY_BUILDING) {
@@ -194,13 +338,18 @@ void PaintEntities(EntityManager *manager, Terrain *terrain) {
                         int distX = abs(dx - cx);
                         int distY = abs(dy - cy);
                         int dist = (distX > distY) ? distX : distY;
-                        
                         int roofHeight = (cx - dist) * 2;
                         if (roofHeight > 0) {
-                            terrain->heightmapRaw[mapIndex] += roofHeight;
-                            terrain->colormapData[mapIndex] = (Color){160, 82, 45, 255}; // Sienna
+                            entityH += roofHeight;
+                            entityC = (Color){160, 82, 45, 255};
                         }
                     }
+                    draw = true;
+                }
+
+                if (draw && entityH >= currentH) {
+                    terrain->heightmapRaw[mapIndex] = entityH;
+                    terrain->colormapData[mapIndex] = entityC;
                 }
 
                 bufIndex++;
