@@ -1,4 +1,5 @@
 lib
 game_engine_demo*
 *.exe
+web/
 .zip

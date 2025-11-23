@@ -3,6 +3,7 @@
 # Compilers and Tools
 CC = gcc
 MINGW_CC = x86_64-w64-mingw32-gcc
+EMCC = emcc
 UPX = upx
 
 # Source and Target
@@ -18,6 +19,7 @@ run: $(SOURCE)
 prep-dirs:
 	@mkdir -p lib/windows
 	@mkdir -p lib/linux
+	@mkdir -p lib/web
 
 # Download Raylib for Windows (MinGW)
 download-raylib-windows: prep-dirs
@@ -38,6 +40,17 @@ download-raylib-linux: prep-dirs
 		echo "Extracting..."; \
 		tar -xzf lib/linux/raylib-linux.tar.gz -C lib/linux/; \
 		rm lib/linux/raylib-linux.tar.gz; \
+		echo "Done."; \
+	fi
+
+# Download Raylib for Web (WASM)
+download-raylib-web: prep-dirs
+	@if [ ! -d "lib/web/raylib-5.5_webassembly" ]; then \
+		echo "Downloading Raylib 5.5 for Web..."; \
+		wget -q --show-progress https://github.com/raysan5/raylib/releases/download/5.5/raylib-5.5_webassembly.zip -O lib/web/raylib-web.zip; \
+		echo "Extracting..."; \
+		unzip -q lib/web/raylib-web.zip -d lib/web/; \
+		rm lib/web/raylib-web.zip; \
 		echo "Done."; \
 	fi
 
@@ -73,12 +86,30 @@ linux: download-raylib-linux
 		-static-libgcc -static-libstdc++
 	$(UPX) --best --lzma $(TARGET)
 
+# Web compilation (HTML5)
+web: download-raylib-web
+	@mkdir -p web
+	@if command -v emcc >/dev/null 2>&1; then \
+		COMPILER="emcc"; \
+	elif [ -x "/usr/lib/emscripten/emcc" ]; then \
+		COMPILER="/usr/lib/emscripten/emcc"; \
+	else \
+		echo "Emscripten (emcc) is not installed. Please install Emscripten SDK."; \
+		exit 1; \
+	fi; \
+	$$COMPILER $(SOURCE) -o web/index.html -Os -Wall -std=c99 -DPLATFORM_WEB -DGRAPHICS_API_OPENGL_ES2 \
+		-I./lib/web/raylib-5.5_webassembly/include \
+		./lib/web/raylib-5.5_webassembly/lib/libraylib.a \
+		-L./lib/web/raylib-5.5_webassembly/lib \
+		-s USE_GLFW=3 -s ASYNCIFY -s TOTAL_MEMORY=67108864 -s FORCE_FILESYSTEM=1
+
 # Clean built files
 clean:
 	rm -f $(TARGET) $(TARGET).exe
+	rm -rf web
 
 # Clean libraries
 clean-libs:
-	rm -rf lib/windows lib/linux
+	rm -rf lib/windows lib/linux lib/web
 
-.PHONY: run prep-dirs download-raylib-windows download-raylib-linux windows linux clean clean-libs
+.PHONY: run prep-dirs download-raylib-windows download-raylib-linux download-raylib-web windows linux web clean clean-libs
