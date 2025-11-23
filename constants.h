@@ -17,7 +17,8 @@
 #define MOUSE_SENSITIVITY_X 0.003f
 #define MOUSE_SENSITIVITY_Y 2.0f
 
-
+#define MAX_ENTITIES 4096
+#define MAX_ENTITY_SIZE 32 // Maximum width/height in map pixels
 
 // Fixed-point math constants
 #define FIXED_POINT_SHIFT 16
@@ -29,8 +30,6 @@
 #define LEVEL_GRASS_LOW 100
 #define LEVEL_GRASS_HIGH 140
 #define LEVEL_ROCK 200
-
-
 
 // DawnBringer-32 Palette
 #define DB_BLACK          (Color){   0,   0,   0, 255 }

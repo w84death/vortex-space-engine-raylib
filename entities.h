@@ -4,9 +4,6 @@
 #include "raylib.h"
 #include "terrain.h"
 
-#define MAX_ENTITIES 4096
-#define MAX_ENTITY_SIZE 32 // Maximum width/height in map pixels
-
 typedef enum {
     ENTITY_SHIP,
     ENTITY_UNIT,
