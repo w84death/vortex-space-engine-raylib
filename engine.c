@@ -16,6 +16,7 @@ void InitEngine(EngineState *state) {
     state->camera_z = 600.0f;
     state->horizon = -150.0f;
     state->phi = 0.785398f;
+    state->demoMode = false;
     state->cursorLocked = false;
 }
 

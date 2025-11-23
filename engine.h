@@ -14,6 +14,7 @@ typedef struct {
     float cosphi;
     float deltaTime;
     bool cursorLocked;
+    bool demoMode;
 } EngineState;
 
 void InitEngine(EngineState *state);
