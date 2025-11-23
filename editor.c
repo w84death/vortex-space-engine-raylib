@@ -18,9 +18,16 @@
 // Preview Terrain Size
 #define PREVIEW_MAP_SIZE 512
 
+static const Color PALETTE[32] = {
+    DB_BLACK, DB_VALHALLA, DB_LOULOU, DB_OILED_CEDAR, DB_ROPE, DB_TAHITI_GOLD, DB_TWINE, DB_PANCHO,
+    DB_GOLDEN_FIZZ, DB_ATLANTIS, DB_CHRISTI, DB_ELF_GREEN, DB_DELL, DB_VERDUN_GREEN, DB_OPAL, DB_DEEP_KOAMARU,
+    DB_VENICE_BLUE, DB_ROYAL_BLUE, DB_KURT, DB_WIND_BLUE, DB_LINK_WATER, DB_WHITE, DB_SILVER, DB_IRON,
+    DB_SHUTTLE_GREY, DB_CASCADE, DB_MING, DB_MOZART, DB_OLD_ROSE, DB_MAUVELOUS, DB_APPLE_BLOSSOM, DB_SAPLING
+};
+
 static VoxelModel currentModel;
-static Color selectedColor = RED;
-static int selectedHeight = 20; // Above water
+static Color selectedColor = DB_MOZART;
+static int selectedHeight = 10;
 
 // Forward declaration
 bool GuiButton(Rectangle bounds, const char* text);
@@ -195,29 +202,42 @@ void RunEditor(void) {
         DrawText("Arrows: Preview", uiX, uiY + 30, 20, BLACK);
 
         // Height Control
-        DrawText(TextFormat("Height: %d", selectedHeight), uiX + 300, uiY, 20, BLACK);
-        if (IsKeyPressed(KEY_W)) selectedHeight++;
-        if (IsKeyPressed(KEY_S)) selectedHeight--;
-        if (selectedHeight < 1) selectedHeight = 1;
-        if (selectedHeight > 100) selectedHeight = 100;
-        DrawText("(W/S)", uiX + 300, uiY + 25, 15, DARKGRAY);
+        DrawText(TextFormat("Height: %d", selectedHeight), uiX + 250, uiY, 20, BLACK);
+        float hVal = (float)selectedHeight;
+        hVal = GuiSlider((Rectangle){uiX + 380, uiY, 150, 20}, "H", hVal, 1, MAX_ENTITY_SIZE);
+        selectedHeight = (int)hVal;
 
-        // Color Picker
-        DrawText("Color (RGB):", uiX + 450, uiY, 20, BLACK);
-        DrawRectangle(uiX + 640, uiY + 45, 40, 40, selectedColor);
-        DrawRectangleLines(uiX + 640, uiY + 45, 40, 40, BLACK);
+        // Palette
+        int palX = uiX + 580;
+        int palY = uiY - 10;
+        int swatchSize = 24;
 
-        float r = (float)selectedColor.r;
-        float g = (float)selectedColor.g;
-        float b = (float)selectedColor.b;
+        for(int i=0; i<32; i++) {
+            int px = i % 8;
+            int py = i / 8;
 
-        r = GuiSlider((Rectangle){uiX + 100, uiY + 60, 150, 20}, "R", r, 0, 255);
-        g = GuiSlider((Rectangle){uiX + 260, uiY + 60, 150, 20}, "G", g, 0, 255);
-        b = GuiSlider((Rectangle){uiX + 420, uiY + 60, 150, 20}, "B", b, 0, 255);
+            Rectangle r = { palX + px * swatchSize, palY + py * swatchSize, swatchSize, swatchSize };
 
-        selectedColor.r = (unsigned char)r;
-        selectedColor.g = (unsigned char)g;
-        selectedColor.b = (unsigned char)b;
+            DrawRectangleRec(r, PALETTE[i]);
+            DrawRectangleLinesEx(r, 1, BLACK);
+
+            // Selection highlight
+            if (selectedColor.r == PALETTE[i].r && selectedColor.g == PALETTE[i].g && selectedColor.b == PALETTE[i].b) {
+                DrawRectangleLinesEx(r, 2, WHITE);
+            }
+
+            // Interaction
+            if (CheckCollisionPointRec(GetMousePosition(), r)) {
+                DrawRectangleLinesEx(r, 2, RED);
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                    selectedColor = PALETTE[i];
+                }
+            }
+        }
+
+        // Selected Color Preview
+        DrawRectangle(palX - 50, palY, 40, 40, selectedColor);
+        DrawRectangleLines(palX - 50, palY, 40, 40, BLACK);
 
         // Size Controls
         DrawText(TextFormat("Size: %dx%d", currentModel.width, currentModel.length), uiX + 200, 20, 20, BLACK);
