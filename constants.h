@@ -30,4 +30,14 @@
 #define LEVEL_GRASS_HIGH 140
 #define LEVEL_ROCK 200
 
+// Terrain Colors
+#define COLOR_DEEP_OCEAN    (Color){ 20, 45, 75, 255 }
+#define COLOR_SHALLOW_WATER (Color){ 40, 80, 90, 255 }
+#define COLOR_BEACH_SAND    (Color){ 215, 205, 185, 255 }
+#define COLOR_WET_SAND      (Color){ 190, 175, 150, 255 }
+#define COLOR_GRASS         (Color){ 115, 140, 70, 255 }
+#define COLOR_TREES         (Color){ 40, 80, 45, 255 }
+#define COLOR_ROCK          (Color){ 90, 90, 90, 255 }
+#define COLOR_SNOW          (Color){ 255, 255, 255, 255 }
+
 #endif // CONSTANTS_H

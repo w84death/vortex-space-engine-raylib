@@ -3,47 +3,42 @@
 #include <stdlib.h>
 #include <math.h>
 
-// Terrain Colors
-static const Color waterDeep = {0, 50, 120, 255};
-static const Color waterShallow = {0, 100, 180, 255};
-static const Color sand = {210, 180, 140, 255};
-static const Color grassLow = {34, 139, 34, 255};
-static const Color grassHigh = {0, 90, 0, 255};
-static const Color rock = {90, 90, 90, 255};
-static const Color snow = {255, 255, 255, 255};
-
 static void GenerateTerrainPixel(Color *colPixel, unsigned char *hPixel)
 {
   unsigned char h = *hPixel;
 
   if (h < LEVEL_WATER) {
     *hPixel = LEVEL_WATER;
-    if (h < LEVEL_WATER - 20) *colPixel = waterDeep;
-    else *colPixel = waterShallow;
+    if (h < LEVEL_WATER - 20) *colPixel = COLOR_DEEP_OCEAN;
+    else *colPixel = COLOR_SHALLOW_WATER;
     return;
   }
   else if (h < LEVEL_SAND + GetRandomValue(-5, 15)) {
-    *colPixel = sand;
-    colPixel->r += GetRandomValue(-10, 10);
-    colPixel->g += GetRandomValue(-10, 10);
+    if (h < LEVEL_WATER + 4) {
+        *colPixel = COLOR_WET_SAND;
+    } else {
+        *colPixel = COLOR_BEACH_SAND;
+        colPixel->r += GetRandomValue(-10, 10);
+        colPixel->g += GetRandomValue(-10, 10);
+    }
   }
   else if (h < LEVEL_GRASS_LOW + GetRandomValue(-10, 25)) {
-    *colPixel = grassLow;
+    *colPixel = COLOR_GRASS;
     colPixel->g += GetRandomValue(-15, 15);
   }
   else if (h < LEVEL_GRASS_HIGH + GetRandomValue(-20, 50)) {
-    *colPixel = grassHigh;
+    *colPixel = COLOR_TREES;
     colPixel->g += GetRandomValue(-25, 10);
     *hPixel += GetRandomValue(0, 10);
   }
   else if (h < LEVEL_ROCK + GetRandomValue(-10, 10)) {
-    *colPixel = rock;
+    *colPixel = COLOR_ROCK;
     int r = GetRandomValue(-10, 10);
     colPixel->r += r;
     colPixel->g += r;
     colPixel->b += r;
   }else {
-    *colPixel = snow;
+    *colPixel = COLOR_SNOW;
   }
 }
 
@@ -89,7 +84,7 @@ void GenerateProceduralTerrain(Terrain *terrain)
     // Fast Gradient-Based Lighting
     // Simulates light coming from Top-Left (North-West)
     // We calculate the slope between current pixel and Right/Bottom neighbors.
-    float shadowStrength = 1.5f;
+    float shadowStrength = 2.5f;
 
     for (int y = 0; y < gameSettings.mapSize - 1; y++)
     {
@@ -120,7 +115,7 @@ void GenerateProceduralTerrain(Terrain *terrain)
           if (lightVal < 0) {
               // Shadow: darker and more saturated
               float factor = 1.0f + (lightVal * 0.04f);
-              if (factor < 0.2f) factor = 0.2f;
+              if (factor < 0.25f) factor = 0.25f;
 
               float r = (float)col->r * factor;
               float g = (float)col->g * factor;
