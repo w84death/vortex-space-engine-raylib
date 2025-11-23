@@ -94,6 +94,12 @@ void HandleInput(EngineState *state, Terrain *terrain) {
     if (IsKeyDown(KEY_E)) {
       state->phi -= 1.5f * state->deltaTime;
     }
+    if (IsKeyDown(KEY_Z)) {
+      state->camera_z += 50.0f * state->deltaTime;
+    }
+    if (IsKeyDown(KEY_X)) {
+      state->camera_z -= 50.0f * state->deltaTime;
+    }
   }
 
   // Bounds Checking
@@ -101,7 +107,8 @@ void HandleInput(EngineState *state, Terrain *terrain) {
   if (state->camera_x >= gameSettings.mapSize) state->camera_x = gameSettings.mapSize - 1;
   if (state->camera_y < 0) state->camera_y = 0;
   if (state->camera_y >= gameSettings.mapSize) state->camera_y = gameSettings.mapSize - 1;
-
+  if (state->camera_z <= CAMERA_MIN_HEIGHT) state->camera_z = CAMERA_MIN_HEIGHT;
+  if (state->camera_z > CAMERA_CEILING_HEIGHT) state->camera_z = CAMERA_CEILING_HEIGHT;
   while (state->phi > 2.0f * PI) state->phi -= 2.0f * PI;
   while (state->phi < 0.0f) state->phi += 2.0f * PI;
 }

@@ -6,10 +6,12 @@
 #define GAME_WIDTH 1280
 #define GAME_HEIGHT 720  // 16:9 aspect ratio
 
-#define MAX_PLANES 1024
+#define MAX_PLANES 1782
 #define MAP_Z_SCALE 256.0f
 #define MOVE_SPEED 180.0f
 #define LOD_FACTOR 512
+#define CAMERA_MIN_HEIGHT 255
+#define CAMERA_CEILING_HEIGHT 1024
 
 // Mouselook Settings
 #define MOUSE_SENSITIVITY_X 0.003f
