@@ -13,6 +13,7 @@ typedef struct {
     float sinphi;
     float cosphi;
     float deltaTime;
+    float time;
     bool cursorLocked;
     bool demoMode;
 } EngineState;

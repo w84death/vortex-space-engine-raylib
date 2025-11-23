@@ -12,107 +12,106 @@
 GameSettings gameSettings;
 
 void SpawnEntitySmart(EntityManager *manager, const Terrain *terrain, EntityType type, int count) {
-    int spawned = 0;
-    int attempts = 0;
-    while(spawned < count && attempts < count * 1000) {
-        attempts++;
-        int x = GetRandomValue(0, gameSettings.mapSize - 1);
-        int y = GetRandomValue(0, gameSettings.mapSize - 1);
-        int index = y * gameSettings.mapSize + x;
-        unsigned char h = terrain->heightmapRaw[index];
+  int spawned = 0;
+  int attempts = 0;
+  while(spawned < count && attempts < count * 1000) {
+    attempts++;
+    int x = GetRandomValue(0, gameSettings.mapSize - 1);
+    int y = GetRandomValue(0, gameSettings.mapSize - 1);
+    int index = y * gameSettings.mapSize + x;
+    unsigned char h = terrain->heightmapRaw[index];
 
-        bool valid = false;
-        if (type == ENTITY_SHIP) {
-            if (h <= LEVEL_WATER) valid = true;
-        } else if (type == ENTITY_UNIT || type == ENTITY_BUILDING) {
-            // Spawn on Sand layer
-            if (h > LEVEL_WATER + 2 && h < LEVEL_SAND) valid = true;
-        }
-
-        if (valid) {
-            AddEntity(manager, type, (float)x, (float)y);
-            spawned++;
-        }
+    bool valid = false;
+    if (type == ENTITY_SHIP) {
+      if (h <= LEVEL_WATER) valid = true;
+    } else if (type == ENTITY_UNIT || type == ENTITY_BUILDING) {
+      if (h > LEVEL_WATER + 2 && h < LEVEL_SAND) valid = true;
     }
+
+    if (valid) {
+      AddEntity(manager, type, (float)x, (float)y);
+      spawned++;
+    }
+  }
 }
 
 void RunSetup() {
-    InitWindow(400, 400, "Game Setup");
-    SetTargetFPS(60);
+  InitWindow(400, 400, "Game Setup");
+  SetTargetFPS(60);
 
-    int selection = 3; // Default 8192
-    
-    while (!WindowShouldClose()) {
-        if (IsKeyPressed(KEY_UP)) selection--;
-        if (IsKeyPressed(KEY_DOWN)) selection++;
-        if (selection < 0) selection = 4;
-        if (selection > 4) selection = 0;
+  int selection = 3; // Default 8192
 
-        if (IsKeyPressed(KEY_ENTER)) break;
+  while (!WindowShouldClose()) {
+      if (IsKeyPressed(KEY_UP)) selection--;
+      if (IsKeyPressed(KEY_DOWN)) selection++;
+      if (selection < 0) selection = 4;
+      if (selection > 4) selection = 0;
 
-        BeginDrawing();
-        ClearBackground(RAYWHITE);
-        DrawText("Select Mode / Map Size:", 20, 20, 20, BLACK);
+      if (IsKeyPressed(KEY_ENTER)) break;
 
-        Color c0 = (selection == 0) ? RED : DARKGRAY;
-        Color c1 = (selection == 1) ? RED : DARKGRAY;
-        Color c2 = (selection == 2) ? RED : DARKGRAY;
-        Color c3 = (selection == 3) ? RED : DARKGRAY;
-        Color c4 = (selection == 4) ? BLUE : DARKGRAY;
+      BeginDrawing();
+      ClearBackground(RAYWHITE);
+      DrawText("Select Mode / Map Size:", 20, 20, 20, BLACK);
 
-        DrawText("1024x1024 (Tiny)", 40, 60, 20, c0);
-        DrawText("2048x2048 (Small)", 40, 90, 20, c1);
-        DrawText("4096x4096 (Medium)", 40, 120, 20, c2);
-        DrawText("8192x8192 (Large)", 40, 150, 20, c3);
-        
-        DrawText("----------------", 40, 175, 20, BLACK);
-        DrawText("Model Editor", 40, 200, 20, c4);
-        
-        DrawText("Press ENTER to Start", 20, 300, 20, DARKBLUE);
-        DrawText("Use Arrow Keys and Enter", 20, 330, 16, DARKGRAY);
+      Color c0 = (selection == 0) ? RED : DARKGRAY;
+      Color c1 = (selection == 1) ? RED : DARKGRAY;
+      Color c2 = (selection == 2) ? RED : DARKGRAY;
+      Color c3 = (selection == 3) ? RED : DARKGRAY;
+      Color c4 = (selection == 4) ? BLUE : DARKGRAY;
 
-        EndDrawing();
-    }
+      DrawText("1024x1024 (Tiny)", 40, 60, 20, c0);
+      DrawText("2048x2048 (Small)", 40, 90, 20, c1);
+      DrawText("4096x4096 (Medium)", 40, 120, 20, c2);
+      DrawText("8192x8192 (Large)", 40, 150, 20, c3);
 
-    // Set settings based on selection
-    gameSettings.gameMode = MODE_GAME;
+      DrawText("----------------", 40, 175, 20, BLACK);
+      DrawText("Model Editor", 40, 200, 20, c4);
 
-    switch(selection) {
-        case 0: // 1024
-            gameSettings.mapSize = 1024;
-            gameSettings.noiseScale = 2.0f;
-            gameSettings.shipCount = 10;
-            gameSettings.unitCount = 40;
-            gameSettings.buildingCount = 20;
-            break;
-        case 1: // 2048
-            gameSettings.mapSize = 2048;
-            gameSettings.noiseScale = 6.0f;
-            gameSettings.shipCount = 20;
-            gameSettings.unitCount = 80;
-            gameSettings.buildingCount = 40;
-            break;
-        case 2: // 4096
-            gameSettings.mapSize = 4096;
-            gameSettings.noiseScale = 10.0f;
-            gameSettings.shipCount = 40;
-            gameSettings.unitCount = 150;
-            gameSettings.buildingCount = 80;
-            break;
-        case 3: // 8192
-            gameSettings.mapSize = 8192;
-            gameSettings.noiseScale = 18.0f;
-            gameSettings.shipCount = 50;
-            gameSettings.unitCount = 200;
-            gameSettings.buildingCount = 100;
-            break;
-        case 4: // Editor
-            gameSettings.gameMode = MODE_EDITOR;
-            gameSettings.mapSize = 1024;
-            break;
-    }
+      DrawText("Press ENTER to Start", 20, 300, 20, DARKBLUE);
+      DrawText("Use Arrow Keys and Enter", 20, 330, 16, DARKGRAY);
 
-    CloseWindow();
+      EndDrawing();
+  }
+
+  // Set settings based on selection
+  gameSettings.gameMode = MODE_GAME;
+
+  switch(selection) {
+    case 0: // 1024
+      gameSettings.mapSize = 1024;
+      gameSettings.noiseScale = 2.0f;
+      gameSettings.shipCount = 10;
+      gameSettings.unitCount = 40;
+      gameSettings.buildingCount = 20;
+      break;
+    case 1: // 2048
+      gameSettings.mapSize = 2048;
+      gameSettings.noiseScale = 6.0f;
+      gameSettings.shipCount = 20;
+      gameSettings.unitCount = 120;
+      gameSettings.buildingCount = 40;
+      break;
+    case 2: // 4096
+      gameSettings.mapSize = 4096;
+      gameSettings.noiseScale = 10.0f;
+      gameSettings.shipCount = 100;
+      gameSettings.unitCount = 250;
+      gameSettings.buildingCount = 80;
+      break;
+    case 3: // 8192
+      gameSettings.mapSize = 8192;
+      gameSettings.noiseScale = 18.0f;
+      gameSettings.shipCount = 500;
+      gameSettings.unitCount = 1000;
+      gameSettings.buildingCount = 100;
+      break;
+    case 4: // Editor
+      gameSettings.gameMode = MODE_EDITOR;
+      gameSettings.mapSize = 1024;
+      break;
+  }
+
+  CloseWindow();
 }
 
 int main(void)
@@ -167,12 +166,12 @@ int main(void)
                 showSpawnMenu = false;
             }
         }
-        
+
         // Handle Menu Clicks
         if (showSpawnMenu && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
             Vector2 mouse = GetMousePosition();
             bool clickedItem = false;
-            
+
             // Check items
             for(int i=0; i<3; i++) {
                 Rectangle itemRect = {spawnMenuPos.x, spawnMenuPos.y + i*30, 120, 30};
@@ -181,19 +180,19 @@ int main(void)
                     if (i==0) type = ENTITY_SHIP;
                     else if (i==1) type = ENTITY_UNIT;
                     else type = ENTITY_BUILDING;
-                    
+
                     // Validate
                     int index = spawnMapY * gameSettings.mapSize + spawnMapX;
                     unsigned char h = terrain.heightmapRaw[index];
                     bool valid = false;
-                    
+
                     if (type == ENTITY_SHIP && h <= LEVEL_WATER) valid = true;
                     if ((type == ENTITY_UNIT || type == ENTITY_BUILDING) && h > LEVEL_WATER) valid = true;
-                    
+
                     if (valid) {
                         AddEntity(entityManager, type, (float)spawnMapX, (float)spawnMapY);
                     }
-                    
+
                     clickedItem = true;
                     showSpawnMenu = false;
                 }
@@ -221,17 +220,17 @@ int main(void)
                 int menuH = 90;
                 DrawRectangle(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, LIGHTGRAY);
                 DrawRectangleLines(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, DARKGRAY);
-                
+
                 const char* items[] = {"Spawn Ship", "Spawn Unit", "Spawn Building"};
                 for(int i=0; i<3; i++) {
                     int y = spawnMenuPos.y + i*30;
-                    
+
                     // Highlight hover
                     Rectangle itemRect = {spawnMenuPos.x, y, menuW, 30};
                     if (CheckCollisionPointRec(GetMousePosition(), itemRect)) {
                         DrawRectangleRec(itemRect, WHITE);
                     }
-                    
+
                     DrawText(items[i], spawnMenuPos.x + 10, y + 8, 10, BLACK);
                     if (i < 2) DrawLine(spawnMenuPos.x, y+30, spawnMenuPos.x+menuW, y+30, GRAY);
                 }

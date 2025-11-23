@@ -34,17 +34,12 @@ typedef struct {
     int width;
     int length;
     int height_shape;  // How tall the voxel shape is
-    int z_offset;      // For ships, this is water level. For tanks, terrain level.
+    int z_offset;
 
     // Visuals
     Color color;
-
-    // Optimization: Paint & Restore Buffer
-    // We store the terrain pixels underneath the entity here before drawing
     unsigned char savedHeights[MAX_ENTITY_SIZE * MAX_ENTITY_SIZE];
     Color savedColors[MAX_ENTITY_SIZE * MAX_ENTITY_SIZE];
-
-    // To handle clipping at map edges
     int paint_x, paint_y, paint_w, paint_h;
 } Entity;
 
