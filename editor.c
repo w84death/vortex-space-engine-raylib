@@ -24,6 +24,7 @@ static int selectedHeight = 20; // Above water
 
 // Forward declaration
 bool GuiButton(Rectangle bounds, const char* text);
+float GuiSlider(Rectangle bounds, const char* text, float value, float min, float max);
 
 void InitEditorModel() {
     currentModel.width = 16;
@@ -130,7 +131,7 @@ void RunEditor(void) {
     state.camera_x = PREVIEW_MAP_SIZE / 2.0f;
     state.camera_y = PREVIEW_MAP_SIZE / 2.0f + 40.0f;
     state.camera_z = 100.0f;
-    state.horizon = 100.0f; 
+    state.horizon = 100.0f;
     state.phi = 0;
 
     // Setup Preview Terrain
@@ -146,11 +147,22 @@ void RunEditor(void) {
         // Input
         HandleGridInput();
 
-        // Camera Controls
+        // Camera Controls (Orbit)
+        static float orbitAngle = 1.5707f; // Start South (PI/2)
+        static float radius = 45.0f;
+
         if (IsKeyDown(KEY_UP)) state.camera_z += 2.0f;
         if (IsKeyDown(KEY_DOWN)) state.camera_z -= 2.0f;
-        if (IsKeyDown(KEY_LEFT)) state.phi -= 0.02f;
-        if (IsKeyDown(KEY_RIGHT)) state.phi += 0.02f;
+        if (IsKeyDown(KEY_LEFT)) orbitAngle -= 0.02f;
+        if (IsKeyDown(KEY_RIGHT)) orbitAngle += 0.02f;
+
+        float cx = PREVIEW_MAP_SIZE / 2.0f;
+        float cy = PREVIEW_MAP_SIZE / 2.0f;
+        state.camera_x = cx + cosf(orbitAngle) * radius;
+        state.camera_y = cy + sinf(orbitAngle) * radius;
+
+        // Look at center (phi=0 is North/Negative Y)
+        state.phi = orbitAngle - 1.5707f;
 
         state.sinphi = sinf(state.phi);
         state.cosphi = cosf(state.phi);
@@ -178,9 +190,9 @@ void RunEditor(void) {
 
         // Controls UI
         int uiX = 20;
-        int uiY = 820;
+        int uiY = 800;
         DrawText("LMB: Paint  RMB: Erase", uiX, uiY, 20, BLACK);
-        DrawText("Arrows: Rotate/Zoom Preview", uiX, uiY + 30, 20, BLACK);
+        DrawText("Arrows: Preview", uiX, uiY + 30, 20, BLACK);
 
         // Height Control
         DrawText(TextFormat("Height: %d", selectedHeight), uiX + 300, uiY, 20, BLACK);
@@ -190,20 +202,22 @@ void RunEditor(void) {
         if (selectedHeight > 100) selectedHeight = 100;
         DrawText("(W/S)", uiX + 300, uiY + 25, 15, DARKGRAY);
 
-        // Color Palette
-        DrawText("Color:", uiX + 450, uiY, 20, BLACK);
-        DrawRectangle(uiX + 520, uiY, 30, 30, selectedColor);
-        DrawRectangleLines(uiX + 520, uiY, 30, 30, BLACK);
+        // Color Picker
+        DrawText("Color (RGB):", uiX + 450, uiY, 20, BLACK);
+        DrawRectangle(uiX + 640, uiY + 45, 40, 40, selectedColor);
+        DrawRectangleLines(uiX + 640, uiY + 45, 40, 40, BLACK);
 
-        int bX = uiX + 450;
-        int bY = uiY + 35;
-        if (GuiButton((Rectangle){bX, bY, 25, 25}, "R")) selectedColor = RED;
-        if (GuiButton((Rectangle){bX+30, bY, 25, 25}, "G")) selectedColor = GREEN;
-        if (GuiButton((Rectangle){bX+60, bY, 25, 25}, "B")) selectedColor = BLUE;
-        if (GuiButton((Rectangle){bX+90, bY, 25, 25}, "Y")) selectedColor = YELLOW;
-        if (GuiButton((Rectangle){bX+120, bY, 25, 25}, "W")) selectedColor = RAYWHITE;
-        if (GuiButton((Rectangle){bX+150, bY, 25, 25}, "Gy")) selectedColor = GRAY;
-        if (GuiButton((Rectangle){bX+180, bY, 25, 25}, "Br")) selectedColor = BROWN;
+        float r = (float)selectedColor.r;
+        float g = (float)selectedColor.g;
+        float b = (float)selectedColor.b;
+
+        r = GuiSlider((Rectangle){uiX + 100, uiY + 60, 150, 20}, "R", r, 0, 255);
+        g = GuiSlider((Rectangle){uiX + 260, uiY + 60, 150, 20}, "G", g, 0, 255);
+        b = GuiSlider((Rectangle){uiX + 420, uiY + 60, 150, 20}, "B", b, 0, 255);
+
+        selectedColor.r = (unsigned char)r;
+        selectedColor.g = (unsigned char)g;
+        selectedColor.b = (unsigned char)b;
 
         // Size Controls
         DrawText(TextFormat("Size: %dx%d", currentModel.width, currentModel.length), uiX + 200, 20, 20, BLACK);
@@ -241,4 +255,33 @@ bool GuiButton(Rectangle bounds, const char* text) {
     DrawText(text, bounds.x + bounds.width/2 - textWidth/2, bounds.y + bounds.height/2 - 5, 10, BLACK);
 
     return clicked;
+}
+
+float GuiSlider(Rectangle bounds, const char* text, float value, float min, float max) {
+    Vector2 mouse = GetMousePosition();
+
+    // Draw Background
+    DrawRectangleRec(bounds, LIGHTGRAY);
+    DrawRectangleLinesEx(bounds, 1, DARKGRAY);
+
+    // Handle Input
+    if (CheckCollisionPointRec(mouse, bounds)) {
+        if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+            float mouseRatio = (mouse.x - bounds.x) / bounds.width;
+            value = min + mouseRatio * (max - min);
+        }
+    }
+    // Clamp
+    if (value < min) value = min;
+    if (value > max) value = max;
+
+    // Draw Handle
+    float ratio = (value - min) / (max - min);
+    DrawRectangle(bounds.x + ratio * bounds.width - 5, bounds.y - 2, 10, bounds.height + 4, DARKGRAY);
+
+    // Text
+    DrawText(text, bounds.x - 20, bounds.y + 5, 10, BLACK);
+    DrawText(TextFormat("%d", (int)value), bounds.x + bounds.width + 10, bounds.y + 5, 10, BLACK);
+
+    return value;
 }
