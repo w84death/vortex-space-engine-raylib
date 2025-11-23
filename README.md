@@ -2,7 +2,8 @@
 
 A high-performance 3D terrain rendering engine built with RayLib in C.
 
-![Screenshot](media/screenshot-v3_0.png)
+![Screenshot](media/screenshot-v3_4a.png)
+![Screenshot](media/screenshot-v3_4b.png)
 
 ## Download
 
