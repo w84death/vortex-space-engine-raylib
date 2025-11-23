@@ -15,9 +15,28 @@ Go to the [Relases](https://github.com/w84death/vortex-space-engine-raylib/relea
 - Cross-platform support (Linux & Windows)
 - Built on the powerful RayLib graphics library
 
-## Build-in Model Editor
+## Built-in Model Editor
 
-![Editro Screenshot](media/screenshot-editor.png)
+![Editor Screenshot](media/screenshot-editor.png)
+
+The engine includes a Voxel Model Editor for creating custom entities (Ships, Units, Buildings).
+
+### Controls
+- **LMB**: Paint voxel
+- **RMB**: Erase voxel
+- **Ctrl + LMB**: Pick color from grid
+- **Shift + LMB**: Pick height from grid
+- **Arrow Keys**: Orbit camera
+- **Save/Load**: Manage your models in `models/` directory
+
+### Creating Models
+1. Select a color from the Dawnbringer-32 palette.
+2. Adjust height using the slider.
+3. Paint on the grid.
+4. Name your model, select category, and click SAVE.
+5. In-game, right-click to open the spawn menu and place your created models.
+
+![Editor Screenshot](media/screenshot-editor2.png)
 
 ## Building
 
