@@ -19,6 +19,7 @@ void ClearFrameBuffer(Renderer *renderer, Color color);
 void DrawVertexSpace(Renderer *renderer, const EngineState *state, const Terrain *terrain);
 void UpdateRendererTexture(Renderer *renderer);
 void DrawRendererTextureToScreen(Renderer *renderer);
+bool GetMapCoordinates(const Renderer *renderer, const EngineState *state, const Terrain *terrain, int screenX, int screenY, int *outMapX, int *outMapY);
 void CloseRenderer(Renderer *renderer);
 
 #endif // RENDERER_H

@@ -123,6 +123,67 @@ void DrawRendererTextureToScreen(Renderer *renderer) {
     DrawTexturePro(renderer->screenTexture, srcRect, destRect, (Vector2){ 0, 0 }, 0.0f, WHITE);
 }
 
+bool GetMapCoordinates(const Renderer *renderer, const EngineState *state, const Terrain *terrain, int screenX, int screenY, int *outMapX, int *outMapY) {
+    // 1. Scale Screen Coords to Game Coords
+    float scaleX = (float)GAME_WIDTH / GetScreenWidth();
+    float scaleY = (float)GAME_HEIGHT / GetScreenHeight();
+    
+    int gameX = (int)(screenX * scaleX);
+    int gameY = (int)(screenY * scaleY);
+
+    if (gameX < 0 || gameX >= GAME_WIDTH || gameY < 0 || gameY >= GAME_HEIGHT) return false;
+
+    // 2. Setup Ray for this column (at distance p=1)
+    // pleft at p=1 relative to camera
+    float pleft_rel_x = -state->cosphi - state->sinphi;
+    float pleft_rel_y = state->sinphi - state->cosphi;
+    
+    // pright at p=1 relative to camera
+    float pright_rel_x = state->cosphi - state->sinphi;
+    float pright_rel_y = -state->sinphi - state->cosphi;
+
+    float dx = (pright_rel_x - pleft_rel_x) / GAME_WIDTH;
+    float dy = (pright_rel_y - pleft_rel_y) / GAME_WIDTH;
+
+    // Ray direction per unit distance p
+    float ray_dx = pleft_rel_x + dx * gameX;
+    float ray_dy = pleft_rel_y + dy * gameX;
+
+    int lowest_horizon = GAME_HEIGHT;
+
+    for (int p = 1; p < MAX_PLANES; p++) {
+        // Current map position
+        float mapX = state->camera_x + ray_dx * p;
+        float mapY = state->camera_y + ray_dy * p;
+
+        // Wrap coords
+        int map_x_int = ((int)mapX) & (gameSettings.mapSize - 1);
+        int map_y_int = ((int)mapY) & (gameSettings.mapSize - 1);
+        int index = map_y_int * gameSettings.mapSize + map_x_int;
+
+        int height = terrain->heightmapRaw[index];
+        
+        // Calculate projected Y
+        // Note: Using the precalculated depth_scale_table from renderer
+        int projected_y = (int)((state->camera_z - height) * renderer->depth_scale_table[p] + state->horizon);
+
+        if (projected_y < lowest_horizon) {
+            // Visible segment found
+            // If the mouse Y is in this vertical segment, we have a hit
+            if (gameY >= projected_y && gameY <= lowest_horizon) {
+                *outMapX = map_x_int;
+                *outMapY = map_y_int;
+                return true;
+            }
+            lowest_horizon = projected_y;
+        }
+        
+        if (lowest_horizon < 0) break;
+    }
+
+    return false;
+}
+
 void CloseRenderer(Renderer *renderer) {
     free(renderer->frameBuffer);
     UnloadTexture(renderer->screenTexture);

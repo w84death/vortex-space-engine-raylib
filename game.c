@@ -142,10 +142,65 @@ int main(void)
     SpawnEntitySmart(entityManager, &terrain, ENTITY_BUILDING, gameSettings.buildingCount);
 
 
+    // Spawn Menu State
+    bool showSpawnMenu = false;
+    Vector2 spawnMenuPos = {0};
+    int spawnMapX = 0;
+    int spawnMapY = 0;
+
     // Main game loop
     while (!WindowShouldClose())
     {
         UpdateEngine(&engineState);
+
+        // Handle Spawn Menu Input
+        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+            int mx = GetMouseX();
+            int my = GetMouseY();
+            int mapX, mapY;
+            if (GetMapCoordinates(&renderer, &engineState, &terrain, mx, my, &mapX, &mapY)) {
+                showSpawnMenu = true;
+                spawnMenuPos = (Vector2){(float)mx, (float)my};
+                spawnMapX = mapX;
+                spawnMapY = mapY;
+            } else {
+                showSpawnMenu = false;
+            }
+        }
+        
+        // Handle Menu Clicks
+        if (showSpawnMenu && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            Vector2 mouse = GetMousePosition();
+            bool clickedItem = false;
+            
+            // Check items
+            for(int i=0; i<3; i++) {
+                Rectangle itemRect = {spawnMenuPos.x, spawnMenuPos.y + i*30, 120, 30};
+                if (CheckCollisionPointRec(mouse, itemRect)) {
+                    EntityType type;
+                    if (i==0) type = ENTITY_SHIP;
+                    else if (i==1) type = ENTITY_UNIT;
+                    else type = ENTITY_BUILDING;
+                    
+                    // Validate
+                    int index = spawnMapY * gameSettings.mapSize + spawnMapX;
+                    unsigned char h = terrain.heightmapRaw[index];
+                    bool valid = false;
+                    
+                    if (type == ENTITY_SHIP && h <= LEVEL_WATER) valid = true;
+                    if ((type == ENTITY_UNIT || type == ENTITY_BUILDING) && h > LEVEL_WATER) valid = true;
+                    
+                    if (valid) {
+                        AddEntity(entityManager, type, (float)spawnMapX, (float)spawnMapY);
+                    }
+                    
+                    clickedItem = true;
+                    showSpawnMenu = false;
+                }
+            }
+            if (!clickedItem) showSpawnMenu = false;
+        }
+
         HandleInput(&engineState, &terrain);
         UpdateEntities(entityManager, engineState.deltaTime, &terrain);
 
@@ -159,6 +214,28 @@ int main(void)
         BeginDrawing();
             DrawRendererTextureToScreen(&renderer);
             DrawGameUI(&engineState);
+
+            if (showSpawnMenu) {
+                // Draw Menu
+                int menuW = 120;
+                int menuH = 90;
+                DrawRectangle(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, LIGHTGRAY);
+                DrawRectangleLines(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, DARKGRAY);
+                
+                const char* items[] = {"Spawn Ship", "Spawn Unit", "Spawn Building"};
+                for(int i=0; i<3; i++) {
+                    int y = spawnMenuPos.y + i*30;
+                    
+                    // Highlight hover
+                    Rectangle itemRect = {spawnMenuPos.x, y, menuW, 30};
+                    if (CheckCollisionPointRec(GetMousePosition(), itemRect)) {
+                        DrawRectangleRec(itemRect, WHITE);
+                    }
+                    
+                    DrawText(items[i], spawnMenuPos.x + 10, y + 8, 10, BLACK);
+                    if (i < 2) DrawLine(spawnMenuPos.x, y+30, spawnMenuPos.x+menuW, y+30, GRAY);
+                }
+            }
         EndDrawing();
     }
 
