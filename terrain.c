@@ -85,6 +85,79 @@ void GenerateProceduralTerrain(Terrain *terrain)
         GenerateTerrainPixel(&terrain->colormapData[i], &terrain->heightmapRaw[i]);
       }
     }
+
+    // Fast Gradient-Based Lighting
+    // Simulates light coming from Top-Left (North-West)
+    // We calculate the slope between current pixel and Right/Bottom neighbors.
+    float shadowStrength = 1.5f;
+
+    for (int y = 0; y < gameSettings.mapSize - 1; y++)
+    {
+      for (int x = 0; x < gameSettings.mapSize - 1; x++)
+      {
+         int i = y * gameSettings.mapSize + x;
+
+         // Current height
+         int h = terrain->heightmapRaw[i];
+
+         if (((h < LEVEL_GRASS_LOW ) && (h > LEVEL_WATER)) || (h >= LEVEL_ROCK)){
+
+          // Neighbors (Right and Down)
+          int hRight = terrain->heightmapRaw[i + 1];
+          int hDown = terrain->heightmapRaw[i + gameSettings.mapSize];
+
+          // Calculate slope (gradient)
+          // If hRight > h, terrain slopes UP to the RIGHT (faces Left/West).
+          // If hDown > h, terrain slopes UP to the BOTTOM (faces Up/North).
+          // Since light is from Top-Left, these surfaces catch light.
+          int diffX = hRight - h;
+          int diffY = hDown - h;
+
+          int lightVal = (int)((diffX + diffY) * shadowStrength);
+
+          Color *col = &terrain->colormapData[i];
+
+          if (lightVal < 0) {
+              // Shadow: darker and more saturated
+              float factor = 1.0f + (lightVal * 0.04f);
+              if (factor < 0.2f) factor = 0.2f;
+
+              float r = (float)col->r * factor;
+              float g = (float)col->g * factor;
+              float b = (float)col->b * factor;
+
+              // Saturation boost
+              float gray = (r + g + b) / 3.0f;
+              float satAmount = 1.4f;
+
+              r = gray + (r - gray) * satAmount;
+              g = gray + (g - gray) * satAmount;
+              b = gray + (b - gray) * satAmount;
+
+              if (r < 0) r = 0; if (r > 255) r = 255;
+              if (g < 0) g = 0; if (g > 255) g = 255;
+              if (b < 0) b = 0; if (b > 255) b = 255;
+
+              col->r = (unsigned char)r;
+              col->g = (unsigned char)g;
+              col->b = (unsigned char)b;
+          } else {
+              // Light: additive brightness
+              int r = col->r + lightVal;
+              int g = col->g + lightVal;
+              int b = col->b + lightVal;
+
+              if (r > 255) r = 255;
+              if (g > 255) g = 255;
+              if (b > 255) b = 255;
+
+              col->r = (unsigned char)r;
+              col->g = (unsigned char)g;
+              col->b = (unsigned char)b;
+          }
+        }
+      }
+    }
 }
 
 void UnloadTerrain(Terrain *terrain) {
