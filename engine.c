@@ -4,7 +4,7 @@
 #include "settings.h"
 
 void InitEngine(EngineState *state) {
-  InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vertex Space - Huge Terrain");
+  InitWindow(0, 0, "Vertex Space - Huge Terrain");
   ToggleFullscreen();
   SetTargetFPS(60);
 

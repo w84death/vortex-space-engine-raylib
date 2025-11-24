@@ -1,8 +1,7 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define WINDOW_WIDTH 1920
-#define WINDOW_HEIGHT 1080
+
 #define GAME_WIDTH 1280
 #define GAME_HEIGHT 720  // 16:9 aspect ratio
 
