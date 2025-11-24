@@ -37,6 +37,7 @@ typedef struct {
     float x, y, z;     // Map coordinates. z is usually base height + offset
     float dx, dy;      // Velocity
     float angle;       // Rotation in radians
+    int facing;        // 0: Right, 1: Down, 2: Left, 3: Up
     float speed;
 
     // Dimensions

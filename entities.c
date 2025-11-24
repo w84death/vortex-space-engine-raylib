@@ -147,6 +147,7 @@ void AddEntityFromModel(EntityManager *manager, EntityType type, float x, float 
     e->type = type;
     e->x = x;
     e->y = y;
+    e->facing = 0; 
     e->model = model;
 
     if (e->model) {
@@ -168,6 +169,10 @@ void AddEntityFromModel(EntityManager *manager, EntityType type, float x, float 
         float angle = (float)GetRandomValue(0, 628) / 100.0f; // 0 to 2PI
         e->dx = cosf(angle) * e->speed;
         e->dy = sinf(angle) * e->speed;
+
+        // Set initial facing
+        if (fabsf(e->dx) > fabsf(e->dy)) e->facing = (e->dx > 0) ? 0 : 2;
+        else e->facing = (e->dy > 0) ? 1 : 3;
     }
     else if (type == ENTITY_UNIT) {
         if (!e->model) {
@@ -182,6 +187,10 @@ void AddEntityFromModel(EntityManager *manager, EntityType type, float x, float 
         float angle = (float)GetRandomValue(0, 628) / 100.0f;
         e->dx = cosf(angle) * e->speed;
         e->dy = sinf(angle) * e->speed;
+
+        // Set initial facing
+        if (fabsf(e->dx) > fabsf(e->dy)) e->facing = (e->dx > 0) ? 0 : 2;
+        else e->facing = (e->dy > 0) ? 1 : 3;
     }
     else if (type == ENTITY_BUILDING) {
         if (!e->model) {
@@ -239,6 +248,10 @@ void UpdateEntities(EntityManager *manager, float deltaTime, const Terrain *terr
                  e->x = nextX;
                  e->y = nextY;
              }
+
+             // Update facing
+             if (fabsf(e->dx) > fabsf(e->dy)) e->facing = (e->dx > 0) ? 0 : 2;
+             else e->facing = (e->dy > 0) ? 1 : 3;
         }
         else if (e->type == ENTITY_UNIT) {
              float nextX = e->x + e->dx * deltaTime;
@@ -267,6 +280,10 @@ void UpdateEntities(EntityManager *manager, float deltaTime, const Terrain *terr
                  e->x = nextX;
                  e->y = nextY;
              }
+
+             // Update facing
+             if (fabsf(e->dx) > fabsf(e->dy)) e->facing = (e->dx > 0) ? 0 : 2;
+             else e->facing = (e->dy > 0) ? 1 : 3;
         }
     }
 }
@@ -276,18 +293,28 @@ void PaintEntities(EntityManager *manager, Terrain *terrain) {
         Entity *e = &manager->list[i];
         if (!e->active) continue;
 
-        int px = (int)e->x - e->width/2;
-        int py = (int)e->y - e->length/2;
+        // Default dimensions (Vertical / Up / Down)
+        int drawW = e->width;
+        int drawH = e->length;
+
+        // Swap dimensions for Horizontal facings (Right / Left)
+        if (e->facing == 0 || e->facing == 2) {
+            drawW = e->length;
+            drawH = e->width;
+        }
+
+        int px = (int)e->x - drawW/2;
+        int py = (int)e->y - drawH/2;
         
         // Store bounds for Restore pass
         e->paint_x = px;
         e->paint_y = py;
-        e->paint_w = e->width;
-        e->paint_h = e->length;
+        e->paint_w = drawW;
+        e->paint_h = drawH;
 
         int bufIndex = 0;
-        for(int dy = 0; dy < e->length; dy++) {
-            for(int dx = 0; dx < e->width; dx++) {
+        for(int dy = 0; dy < drawH; dy++) {
+            for(int dx = 0; dx < drawW; dx++) {
                 // Handle map wrapping
                 int mx = (px + dx) & (gameSettings.mapSize - 1);
                 int my = (py + dy) & (gameSettings.mapSize - 1);
@@ -308,33 +335,67 @@ void PaintEntities(EntityManager *manager, Terrain *terrain) {
                 Color entityC = BLANK;
                 bool draw = false;
 
+                // Calculate Model Coordinates (modX, modY) based on facing
+                // Assume Default Model Orientation is UP (Facing 3)
+                int modX = dx;
+                int modY = dy;
+
+                if (e->facing == 0) { // Right
+                    // 90 Deg Clockwise from Up
+                    // modX maps to dy
+                    // modY maps to reversed dx
+                    modX = dy;
+                    modY = e->length - 1 - dx;
+                } 
+                else if (e->facing == 1) { // Down
+                    // 180 Deg
+                    modX = e->width - 1 - dx;
+                    modY = e->length - 1 - dy;
+                }
+                else if (e->facing == 2) { // Left
+                    // 270 Deg Clockwise (90 CCW) from Up
+                    // modX maps to reversed dy
+                    // modY maps to dx
+                    modX = e->width - 1 - dy;
+                    modY = dx;
+                }
+                else { // Up (3)
+                    // Identity
+                    modX = dx;
+                    modY = dy;
+                }
+
                 if (e->model) {
-                    int idx = dy * MAX_ENTITY_SIZE + dx;
-                    unsigned char h = e->model->heights[idx];
-                    if (h > 0) {
-                        entityH = baseH + h;
-                        entityC = e->model->colors[idx];
-                        draw = true;
+                    if (modX >= 0 && modX < e->width && modY >= 0 && modY < e->length) {
+                        int idx = modY * MAX_ENTITY_SIZE + modX;
+                        unsigned char h = e->model->heights[idx];
+                        if (h > 0) {
+                            entityH = baseH + h;
+                            entityC = e->model->colors[idx];
+                            draw = true;
+                        }
                     }
                 } else {
                     // Procedural Fallback
+                    // We use drawW/drawH here for the boundary check
                     entityH = baseH + (unsigned char)e->height_shape;
-                    if (dx == 0 || dx == e->width-1 || dy == 0 || dy == e->length-1) {
+                    if (dx == 0 || dx == drawW-1 || dy == 0 || dy == drawH-1) {
                          entityC = (Color){e->color.r/2, e->color.g/2, e->color.b/2, 255};
                     } else {
                          entityC = e->color;
                     }
                     
-                    // Procedural details
+                    // Simple procedural detail logic (not rotated fully, just simple shapes)
                     if (e->type == ENTITY_SHIP) {
-                        if (dx >= 2 && dx <= e->width-3 && dy >= 2 && dy <= 6) {
+                        // Just draw a "cabin" in the middle-ish
+                        if (dx >= drawW/4 && dx <= drawW*3/4 && dy >= drawH/4 && dy <= drawH/2) {
                             entityH += 4;
                             entityC = RAYWHITE;
                         }
                     }
                     else if (e->type == ENTITY_BUILDING) {
-                        int cx = e->width / 2;
-                        int cy = e->length / 2;
+                        int cx = drawW / 2;
+                        int cy = drawH / 2;
                         int distX = abs(dx - cx);
                         int distY = abs(dy - cy);
                         int dist = (distX > distY) ? distX : distY;
