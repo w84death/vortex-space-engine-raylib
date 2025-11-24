@@ -103,6 +103,28 @@ web: download-raylib-web
 		-L./lib/web/raylib-5.5_webassembly/lib \
 		-s USE_GLFW=3 -s ASYNCIFY -s TOTAL_MEMORY=67108864 -s FORCE_FILESYSTEM=1
 
+# Release for Windows (Zip)
+release-windows: windows
+	@echo "Creating Windows Release..."
+	@rm -rf release_windows
+	@mkdir -p release_windows
+	@cp $(TARGET).exe release_windows/
+	@cp -r models release_windows/
+	@zip -r $(TARGET)_windows.zip release_windows
+	@rm -rf release_windows
+	@echo "Done: $(TARGET)_windows.zip"
+
+# Release for Linux (Zip)
+release-linux: linux
+	@echo "Creating Linux Release..."
+	@rm -rf release_linux
+	@mkdir -p release_linux
+	@cp $(TARGET) release_linux/
+	@cp -r models release_linux/
+	@zip -r $(TARGET)_linux.zip release_linux
+	@rm -rf release_linux
+	@echo "Done: $(TARGET)_linux.zip"
+
 # Clean built files
 clean:
 	rm -f $(TARGET) $(TARGET).exe
@@ -112,4 +134,4 @@ clean:
 clean-libs:
 	rm -rf lib/windows lib/linux lib/web
 
-.PHONY: run prep-dirs download-raylib-windows download-raylib-linux download-raylib-web windows linux web clean clean-libs
+.PHONY: run prep-dirs download-raylib-windows download-raylib-linux download-raylib-web windows linux web clean clean-libs release-windows release-linux
