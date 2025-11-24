@@ -146,6 +146,8 @@ int main(void)
     Vector2 spawnMenuPos = {0};
     int spawnMapX = 0;
     int spawnMapY = 0;
+    int menuLevel = 0; // 0: Categories, 1: Models
+    EntityType selectedCategory = ENTITY_UNIT;
 
     // Main game loop
     while (!WindowShouldClose())
@@ -162,6 +164,7 @@ int main(void)
                 spawnMenuPos = (Vector2){(float)mx, (float)my};
                 spawnMapX = mapX;
                 spawnMapY = mapY;
+                menuLevel = 0;
             } else {
                 showSpawnMenu = false;
             }
@@ -172,26 +175,44 @@ int main(void)
             Vector2 mouse = GetMousePosition();
             bool clickedItem = false;
 
-            // Check items
-            for(int i=0; i < modelRegistry.count; i++) {
-                Rectangle itemRect = {spawnMenuPos.x, spawnMenuPos.y + i*20, 150, 20};
-                if (CheckCollisionPointRec(mouse, itemRect)) {
+            if (menuLevel == 0) {
+                 const char* categories[] = {"Units", "Buildings", "Ships"};
+                 EntityType types[] = {ENTITY_UNIT, ENTITY_BUILDING, ENTITY_SHIP};
+                 
+                 for(int i=0; i<3; i++) {
+                     Rectangle itemRect = {spawnMenuPos.x, spawnMenuPos.y + i*20, 150, 20};
+                     if (CheckCollisionPointRec(mouse, itemRect)) {
+                         menuLevel = 1;
+                         selectedCategory = types[i];
+                         clickedItem = true;
+                     }
+                 }
+            } else {
+                // Check items
+                int displayIndex = 0;
+                for(int i=0; i < modelRegistry.count; i++) {
                     VoxelModel *m = &modelRegistry.models[i];
-                    
-                    // Validate
-                    int index = spawnMapY * gameSettings.mapSize + spawnMapX;
-                    unsigned char h = terrain.heightmapRaw[index];
-                    bool valid = false;
+                    if (m->type != selectedCategory) continue;
 
-                    if (m->type == ENTITY_SHIP && h <= LEVEL_WATER) valid = true;
-                    if ((m->type == ENTITY_UNIT || m->type == ENTITY_BUILDING) && h > LEVEL_WATER) valid = true;
+                    Rectangle itemRect = {spawnMenuPos.x, spawnMenuPos.y + displayIndex*20, 150, 20};
+                    if (CheckCollisionPointRec(mouse, itemRect)) {
+                        
+                        // Validate
+                        int index = spawnMapY * gameSettings.mapSize + spawnMapX;
+                        unsigned char h = terrain.heightmapRaw[index];
+                        bool valid = false;
 
-                    if (valid) {
-                        AddEntityFromModel(entityManager, m->type, (float)spawnMapX, (float)spawnMapY, m);
+                        if (m->type == ENTITY_SHIP && h <= LEVEL_WATER) valid = true;
+                        if ((m->type == ENTITY_UNIT || m->type == ENTITY_BUILDING) && h > LEVEL_WATER) valid = true;
+
+                        if (valid) {
+                            AddEntityFromModel(entityManager, m->type, (float)spawnMapX, (float)spawnMapY, m);
+                        }
+
+                        clickedItem = true;
+                        showSpawnMenu = false;
                     }
-
-                    clickedItem = true;
-                    showSpawnMenu = false;
+                    displayIndex++;
                 }
             }
             if (!clickedItem) showSpawnMenu = false;
@@ -214,23 +235,52 @@ int main(void)
             if (showSpawnMenu) {
                 // Draw Menu
                 int menuW = 150;
-                int menuH = (modelRegistry.count > 0) ? modelRegistry.count * 20 : 30;
-                DrawRectangle(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, LIGHTGRAY);
-                DrawRectangleLines(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, DARKGRAY);
-
-                if (modelRegistry.count == 0) {
-                     DrawText("No Models", spawnMenuPos.x + 10, spawnMenuPos.y + 10, 10, DARKGRAY);
-                }
-
-                for(int i=0; i < modelRegistry.count; i++) {
-                    int y = spawnMenuPos.y + i*20;
-                    Rectangle itemRect = {spawnMenuPos.x, y, menuW, 20};
+                
+                if (menuLevel == 0) {
+                    // Draw Categories
+                    int menuH = 3 * 20;
+                    DrawRectangle(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, LIGHTGRAY);
+                    DrawRectangleLines(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, DARKGRAY);
                     
-                    if (CheckCollisionPointRec(GetMousePosition(), itemRect)) {
-                        DrawRectangleRec(itemRect, WHITE);
+                    const char* categories[] = {"Units", "Buildings", "Ships"};
+                    for(int i=0; i<3; i++) {
+                         int y = spawnMenuPos.y + i*20;
+                         Rectangle itemRect = {spawnMenuPos.x, y, menuW, 20};
+                         if (CheckCollisionPointRec(GetMousePosition(), itemRect)) {
+                            DrawRectangleRec(itemRect, WHITE);
+                         }
+                         DrawText(categories[i], spawnMenuPos.x + 10, y + 5, 10, BLACK);
                     }
-                    
-                    DrawText(modelRegistry.models[i].name, spawnMenuPos.x + 10, y + 5, 10, BLACK);
+                } else {
+                    // Draw Models
+                    int count = 0;
+                    for(int i=0; i<modelRegistry.count; i++) {
+                        if (modelRegistry.models[i].type == selectedCategory) count++;
+                    }
+
+                    int menuH = (count > 0) ? count * 20 : 30;
+                    DrawRectangle(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, LIGHTGRAY);
+                    DrawRectangleLines(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, DARKGRAY);
+
+                    if (count == 0) {
+                        DrawText("No Models", spawnMenuPos.x + 10, spawnMenuPos.y + 10, 10, DARKGRAY);
+                    }
+
+                    int displayIndex = 0;
+                    for(int i=0; i < modelRegistry.count; i++) {
+                        VoxelModel *m = &modelRegistry.models[i];
+                        if (m->type != selectedCategory) continue;
+
+                        int y = spawnMenuPos.y + displayIndex*20;
+                        Rectangle itemRect = {spawnMenuPos.x, y, menuW, 20};
+                        
+                        if (CheckCollisionPointRec(GetMousePosition(), itemRect)) {
+                            DrawRectangleRec(itemRect, WHITE);
+                        }
+                        
+                        DrawText(m->name, spawnMenuPos.x + 10, y + 5, 10, BLACK);
+                        displayIndex++;
+                    }
                 }
             }
         EndDrawing();
