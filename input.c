@@ -4,6 +4,7 @@
 #include <math.h>
 
 void HandleInput(EngineState *state, Terrain *terrain) {
+  (void)terrain;
   // Regenerate Terrain
   // if (IsKeyPressed(KEY_R)) {
   //     DrawLoadingMessage("Generating Terrain (Please Wait)...");

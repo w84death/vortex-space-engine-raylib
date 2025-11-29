@@ -50,25 +50,27 @@ void RunSetup() {
       if (IsKeyPressed(KEY_ENTER)) break;
 
       BeginDrawing();
-      ClearBackground(RAYWHITE);
-      DrawText("Select Mode / Map Size:", 20, 20, 20, BLACK);
+      ClearBackground(THEME_BG);
+      DrawRectangleLines(10, 10, 380, 380, THEME_ACCENT);
 
-      Color c0 = (selection == 0) ? RED : DARKGRAY;
-      Color c1 = (selection == 1) ? RED : DARKGRAY;
-      Color c2 = (selection == 2) ? RED : DARKGRAY;
-      Color c3 = (selection == 3) ? RED : DARKGRAY;
-      Color c4 = (selection == 4) ? BLUE : DARKGRAY;
+      DrawText("Select Mode / Map Size:", 20, 20, 20, THEME_TEXT);
+
+      Color c0 = (selection == 0) ? THEME_ACCENT_LIGHT : THEME_TEXT_DIM;
+      Color c1 = (selection == 1) ? THEME_ACCENT_LIGHT : THEME_TEXT_DIM;
+      Color c2 = (selection == 2) ? THEME_ACCENT_LIGHT : THEME_TEXT_DIM;
+      Color c3 = (selection == 3) ? THEME_ACCENT_LIGHT : THEME_TEXT_DIM;
+      Color c4 = (selection == 4) ? THEME_ACCENT_LIGHT : THEME_TEXT_DIM;
 
       DrawText("1024x1024 (Tiny)", 40, 60, 20, c0);
       DrawText("2048x2048 (Small)", 40, 90, 20, c1);
       DrawText("4096x4096 (Medium)", 40, 120, 20, c2);
       DrawText("8192x8192 (Large)", 40, 150, 20, c3);
 
-      DrawText("----------------", 40, 175, 20, BLACK);
+      DrawText("----------------", 40, 175, 20, THEME_TEXT);
       DrawText("Model Editor", 40, 200, 20, c4);
 
-      DrawText("Press ENTER to Start", 20, 300, 20, DARKBLUE);
-      DrawText("Use Arrow Keys and Enter", 20, 330, 16, DARKGRAY);
+      DrawText("Press ENTER to Start", 20, 300, 20, THEME_ACCENT);
+      DrawText("Use Arrow Keys and Enter", 20, 330, 16, THEME_TEXT_DIM);
 
       EndDrawing();
   }
@@ -176,7 +178,6 @@ int main(void)
             bool clickedItem = false;
 
             if (menuLevel == 0) {
-                 const char* categories[] = {"Units", "Buildings", "Ships"};
                  EntityType types[] = {ENTITY_UNIT, ENTITY_BUILDING, ENTITY_SHIP};
                  
                  for(int i=0; i<3; i++) {
@@ -239,17 +240,19 @@ int main(void)
                 if (menuLevel == 0) {
                     // Draw Categories
                     int menuH = 3 * 20;
-                    DrawRectangle(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, LIGHTGRAY);
-                    DrawRectangleLines(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, DARKGRAY);
+                    DrawRectangle(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, THEME_PANEL);
+                    DrawRectangleLines(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, THEME_ACCENT);
                     
                     const char* categories[] = {"Units", "Buildings", "Ships"};
                     for(int i=0; i<3; i++) {
                          int y = spawnMenuPos.y + i*20;
                          Rectangle itemRect = {spawnMenuPos.x, y, menuW, 20};
-                         if (CheckCollisionPointRec(GetMousePosition(), itemRect)) {
-                            DrawRectangleRec(itemRect, WHITE);
+                         bool hover = CheckCollisionPointRec(GetMousePosition(), itemRect);
+
+                         if (hover) {
+                            DrawRectangleRec(itemRect, THEME_GRID_LINE);
                          }
-                         DrawText(categories[i], spawnMenuPos.x + 10, y + 5, 10, BLACK);
+                         DrawText(categories[i], spawnMenuPos.x + 10, y + 5, 10, hover ? THEME_ACCENT_LIGHT : THEME_TEXT);
                     }
                 } else {
                     // Draw Models
@@ -259,11 +262,11 @@ int main(void)
                     }
 
                     int menuH = (count > 0) ? count * 20 : 30;
-                    DrawRectangle(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, LIGHTGRAY);
-                    DrawRectangleLines(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, DARKGRAY);
+                    DrawRectangle(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, THEME_PANEL);
+                    DrawRectangleLines(spawnMenuPos.x, spawnMenuPos.y, menuW, menuH, THEME_ACCENT);
 
                     if (count == 0) {
-                        DrawText("No Models", spawnMenuPos.x + 10, spawnMenuPos.y + 10, 10, DARKGRAY);
+                        DrawText("No Models", spawnMenuPos.x + 10, spawnMenuPos.y + 10, 10, THEME_TEXT_DIM);
                     }
 
                     int displayIndex = 0;
@@ -274,11 +277,12 @@ int main(void)
                         int y = spawnMenuPos.y + displayIndex*20;
                         Rectangle itemRect = {spawnMenuPos.x, y, menuW, 20};
                         
-                        if (CheckCollisionPointRec(GetMousePosition(), itemRect)) {
-                            DrawRectangleRec(itemRect, WHITE);
+                        bool hover = CheckCollisionPointRec(GetMousePosition(), itemRect);
+                        if (hover) {
+                            DrawRectangleRec(itemRect, THEME_GRID_LINE);
                         }
                         
-                        DrawText(m->name, spawnMenuPos.x + 10, y + 5, 10, BLACK);
+                        DrawText(m->name, spawnMenuPos.x + 10, y + 5, 10, hover ? THEME_ACCENT_LIGHT : THEME_TEXT);
                         displayIndex++;
                     }
                 }
