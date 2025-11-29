@@ -39,15 +39,24 @@ void RunSetup() {
   InitWindow(400, 400, "Game Setup");
   SetTargetFPS(60);
 
-  int selection = 3; // Default 8192
+  int selection = 1; // Default 2048 (Small)
+  bool confirmed = false;
 
   while (!WindowShouldClose()) {
       if (IsKeyPressed(KEY_UP)) selection--;
       if (IsKeyPressed(KEY_DOWN)) selection++;
-      if (selection < 0) selection = 4;
-      if (selection > 4) selection = 0;
+      if (selection < 0) selection = 5;
+      if (selection > 5) selection = 0;
 
-      if (IsKeyPressed(KEY_ENTER)) break;
+      if (IsKeyPressed(KEY_ENTER)) {
+          confirmed = true;
+          break;
+      }
+      if (IsKeyPressed(KEY_ESCAPE)) {
+          selection = 5;
+          confirmed = true;
+          break;
+      }
 
       BeginDrawing();
       ClearBackground(THEME_BG);
@@ -60,6 +69,7 @@ void RunSetup() {
       Color c2 = (selection == 2) ? THEME_ACCENT_LIGHT : THEME_TEXT_DIM;
       Color c3 = (selection == 3) ? THEME_ACCENT_LIGHT : THEME_TEXT_DIM;
       Color c4 = (selection == 4) ? THEME_ACCENT_LIGHT : THEME_TEXT_DIM;
+      Color c5 = (selection == 5) ? THEME_ACCENT_LIGHT : THEME_TEXT_DIM;
 
       DrawText("1024x1024 (Tiny)", 40, 60, 20, c0);
       DrawText("2048x2048 (Small)", 40, 90, 20, c1);
@@ -68,11 +78,18 @@ void RunSetup() {
 
       DrawText("----------------", 40, 175, 20, THEME_TEXT);
       DrawText("Model Editor", 40, 200, 20, c4);
+      DrawText("Quit System", 40, 230, 20, c5);
 
       DrawText("Press ENTER to Start", 20, 300, 20, THEME_ACCENT);
       DrawText("Use Arrow Keys and Enter", 20, 330, 16, THEME_TEXT_DIM);
 
       EndDrawing();
+  }
+
+  if (!confirmed) {
+      gameSettings.gameMode = MODE_QUIT;
+      CloseWindow();
+      return;
   }
 
   // Set settings based on selection
@@ -111,6 +128,9 @@ void RunSetup() {
       gameSettings.gameMode = MODE_EDITOR;
       gameSettings.mapSize = 1024;
       break;
+    case 5: // Quit
+      gameSettings.gameMode = MODE_QUIT;
+      break;
   }
 
   CloseWindow();
@@ -119,6 +139,8 @@ void RunSetup() {
 int main(void)
 {
     RunSetup();
+
+    if (gameSettings.gameMode == MODE_QUIT) return 0;
 
     if (gameSettings.gameMode == MODE_EDITOR) {
         RunEditor();

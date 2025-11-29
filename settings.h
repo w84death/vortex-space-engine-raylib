@@ -3,7 +3,8 @@
 
 typedef enum {
     MODE_GAME,
-    MODE_EDITOR
+    MODE_EDITOR,
+    MODE_QUIT
 } GameMode;
 
 typedef struct {
